@@ -1,0 +1,22 @@
+spring.application.name: bus-ticketing
+
+whatsapp:
+  encryption:
+    private-key-path: keys/private_key.pem
+    public-key-path: keys/public_key.pem
+
+  app:
+    dev-mode: true
+  api:
+    base-url: https://graph.facebook.com
+    version: v22.0
+    # This value is loaded from an environment variable set in the OS (.zshrc, Docker env, etc.)
+    access-token: ${WHATSAPP_BUSINESS_API_TOKEN}
+    whatsapp-business-account-id: 553980767801243
+    phone-number: 15551944707
+    phone-number-id: 571710919355097
+server:
+  port: 3000
+logging:
+  level:
+    com.tazifor: debug
