@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.CorePublisher;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -95,5 +96,66 @@ public class WhatsAppApiClient {
             .bodyValue(payload)
             .retrieve()
             .bodyToMono(Void.class);
+    }
+
+    // ---------------------------------------------
+    // 3) Send an interactive “Flow” message
+    // This tells WhatsApp to open a Flow UI on the user’s phone.
+    // ---------------------------------------------
+    public Mono<Void> sendFlowMessage(String to,
+                                      String flowId,
+                                      Map<String, Object> flowActionPayload) {
+        // flowActionPayload may be empty or contain “data” for the first screen
+        Map<String, Object> interactive = Map.<String, Object>of(
+            "type", "flow",
+            "body", Map.of("text", "Let me guide you to book your ticket!"), // optional prompt text
+            "action", Map.of(
+                "name", "flow",
+                "parameters", Map.of(
+                    "flow_message_version", "3",
+                    "flow_cta", "Begin!",
+                    "flow_id", flowId,
+                    "flow_token", flowActionPayload.getOrDefault("flow_token", generateRandomToken()),
+                    "flow_action", "data_exchange" //get data from endpoint url
+                )
+            )
+        );
+
+        // If you want to pass initial data, tack it onto parameters:
+        if (flowActionPayload.containsKey("data")) {
+            interactive = Map.of(
+                "type", "flow",
+                "body", Map.of("text", "Let me guide you to book your ticket!"),
+                "action", Map.of(
+                    "name", "flow",
+                    "parameters", Map.<String, Object>of(
+                        "flow_message_version", "3",
+                        "flow_cta", "Begin!",
+                        "flow_id", flowId,
+                        "flow_token", flowActionPayload.getOrDefault("flow_token", generateRandomToken()),
+                        "flow_action_payload", Map.of("data", flowActionPayload.get("data"))
+                    )
+                )
+            );
+        }
+
+        Map<String, Object> body = Map.of(
+            "messaging_product", "whatsapp",
+            "recipient_type", "individual",
+            "to", to,
+            "type", "interactive",
+            "interactive", interactive
+        );
+
+        return webClient
+            .post()
+            .bodyValue(body)
+            .retrieve()
+            .bodyToMono(Void.class);
+    }
+
+    // Helper to generate a random flow token if you need one
+    private String generateRandomToken() {
+        return java.util.UUID.randomUUID().toString();
     }
 }

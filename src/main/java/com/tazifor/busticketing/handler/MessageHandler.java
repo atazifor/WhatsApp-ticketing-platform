@@ -87,16 +87,7 @@ public class MessageHandler {
                 return;
             }
 
-            // Process intermediate screen: this returns a Map representing the next Flow message.
-            flowService.handlePlainExchange(midRequest)
-                .flatMap(responseBodyMap -> {
-                    // Send the next Flow screen back via Cloud API
-                    return messageService.sendRawFlowMessage(from, responseBodyMap);
-                })
-                .subscribe(
-                    __ -> logger.info("Sent next Flow screen (unencrypted) to {}", from),
-                    err -> logger.error("Error sending next Flow screen", err)
-                );
+            logger.info("Handling Flow mid-request with params: {}", midRequest);
             return;
         }
         // CASE B: Final/Completion of a builder‐only (unencrypted) Flow

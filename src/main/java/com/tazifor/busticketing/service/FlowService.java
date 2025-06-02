@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FlowService {
     private static final Logger logger = LoggerFactory.getLogger(FlowService.class);
 
-    private final EncryptionService encryptionService;
+    private final FlowEncryptionService encryptionService;
     private final WhatsAppApiClient apiClient;
     private final ObjectMapper objectMapper;
 
@@ -57,62 +58,66 @@ public class FlowService {
      * @param encryptedPayload the raw encrypted input from WhatsApp
      * @return a Mono emitting the full response map (with keys "version", "flow_token", "data", "screen", and optional "close")
      */
-    public Mono<Map<String, Object>> handleExchange(FlowEncryptedPayload encryptedPayload) {
+    public Mono<String> handleExchange(FlowEncryptedPayload encryptedPayload) {
         return Mono.fromCallable(() -> {
             // 1) Decrypt incoming payload (AES data + RSA‐wrapped key + IV)
-            EncryptionService.DecryptionResult dr = encryptionService.decryptPayload(
+            FlowEncryptionService.DecryptionResult dr = encryptionService.decryptPayload(
                     encryptedPayload.getEncryptedFlowData(),
                     encryptedPayload.getEncryptedAesKey(),
                     encryptedPayload.getInitialVector()
             );
 
             // 2) Parse decrypted JSON into a typed request
-            FlowDataExchangePayload request = objectMapper.readValue(
-                    dr.getClearJson(),
+            FlowDataExchangePayload decryptedRequestPayload = objectMapper.readValue(
+                    dr.clearJson(),
                     FlowDataExchangePayload.class
             );
 
-            // 3) Rebuild or initialize the domain state
-            BookingState state = rebuildState(request);
+            // 3) If "ping", return encrypted health‐check
+            if ("ping".equals(decryptedRequestPayload.getAction())) {
+                String healthJson = objectMapper.writeValueAsString(
+                        Map.of("data", Map.of("status", "active"))
+                );
+                return encryptionService.encryptPayload(
+                        healthJson, dr.aesKey(), dr.iv()
+                );
+            }
 
-            // 4) Decide which UI screen to show next (or final)
+            // 4) Rebuild or initialize the domain state
+            BookingState state = rebuildState(decryptedRequestPayload);
+
+            // 5) Decide which UI screen to show next (or final)
             FlowResponsePayload ui;
-            switch (request.getAction()) {
+            switch (decryptedRequestPayload.getAction()) {
                 case "INIT":
+                    logger.info("INIT for token {}", decryptedRequestPayload.getFlow_token());
                     ui = showInitialScreen(state);
                     break;
                 case "BACK":
                     ui = showBackScreen(state);
                     break;
                 case "data_exchange":
-                    ui = processSubmission(request, state);
+                    ui = handleDataExchangeStep(decryptedRequestPayload, state);
                     break;
                 default:
-                    throw new IllegalArgumentException("Unknown action: " + request.getAction());
+                    throw new IllegalArgumentException("Unknown action: " + decryptedRequestPayload.getAction());
             }
 
-            // 5) If it’s a final payload, ensure flow_token is included in the ExtensionMessageResponse
+            // 6) If it’s a final payload, ensure flow_token is included in the ExtensionMessageResponse
             if (ui instanceof FinalScreenResponsePayload finalUi) {
-                finalUi.getData().getParams().put("flow_token", request.getFlow_token());
-                finalUi.getData().validate();
+                logger.info("Final UI data {}", finalUi.getData());
+                logger.info("Decrypted request payload: {}", decryptedRequestPayload);
+                //finalUi.getData().getParams().put("flow_token", decryptedRequestPayload.getFlow_token());
+                ((FinalScreenResponsePayload.ExtensionMessageResponse)finalUi.getData().get("extension_message_response")).validate();
             }
 
-            // 6) Serialize and re‐encrypt the new state
-            String newStateJson = objectMapper.writeValueAsString(state);
-            String encryptedState = encryptionService.encryptState(
-                    newStateJson, dr.getAesKey(), dr.getIv()
+            // 7) Serialize and re‐encrypt the new state
+            String uiAsString = objectMapper.writeValueAsString(ui);
+            logger.info("UI data {}", uiAsString);
+            return encryptionService.encryptPayload(
+                uiAsString, dr.aesKey(), dr.iv()
             );
 
-            // 7) Build the response map expected by WhatsApp Flow endpoint
-            Map<String, Object> response = new java.util.LinkedHashMap<>();
-            response.put("version", "3.0");
-            response.put("flow_token", request.getFlow_token());
-            response.put("data", encryptedState);
-            response.put("screen", ui);
-            if (ui instanceof FinalScreenResponsePayload) {
-                response.put("close", true);
-            }
-            return response;
         });
     }
 
@@ -120,119 +125,6 @@ public class FlowService {
     //===========================================================================
     // PART 2: Unencrypted (“Builder‐Only”) Flow
     //===========================================================================
-
-    /**
-     * Processes an intermediate (unencrypted, builder‐only) Flow callback coming from nfm_reply.response_json.
-     * The request already contains { version, action, screen, data, flow_token, etc. } in plain JSON.
-     *
-     * Called from MessageHandler when interactive.type == "nfm_reply" and JSON has version/action.
-     *
-     * @param request the parsed FlowDataExchangePayload
-     * @return a Mono emitting a Map that represents exactly the Cloud API /messages payload
-     *         (with "messaging_product", "to", "type", and "interactive").
-     *
-     * That Map will be POSTed to /vX.X/{PHONE_NUMBER_ID}/messages by MessageHandler.
-     */
-    public Mono<Map<String, Object>> handlePlainExchange(FlowDataExchangePayload request) {
-        return Mono.fromCallable(() -> {
-            String flowToken = request.getFlow_token();
-
-            // 1) Retrieve or create the BookingState for this flow_token
-            BookingState state = plainStateStore.computeIfAbsent(flowToken, t -> new BookingState());
-
-            // 2) Initialize or update state based on request.getAction()
-            if ("INIT".equals(request.getAction())) {
-                logger.info("Plain Flow INIT for token {}", flowToken);
-                state.setStep("choose_destination");
-
-            } else if ("data_exchange".equals(request.getAction())) {
-                String currentStep = state.getStep();
-                switch (currentStep) {
-                    case "choose_destination" -> {
-                        // In a builder‐only Flow, field keys look like "screen_0_Name_0"
-                        Object destObj = request.getData().get("screen_0_Name_0");
-                        String destination = destObj != null ? destObj.toString() : "";
-                        state.setDestination(destination);
-                        state.setStep("choose_date");
-                        logger.info("User chose destination: {} on token {}", destination, flowToken);
-                    }
-                    case "choose_date" -> {
-                        Object dateObj = request.getData().get("screen_0_DoB_1");
-                        String date = dateObj != null ? dateObj.toString() : "";
-                        state.setDate(date);
-                        state.setStep("confirm");
-                        logger.info("User chose date: {} on token {}", date, flowToken);
-                    }
-                    case "confirm" -> {
-                        state.setStep("completed");
-                        logger.info("User confirmed booking for token {}", flowToken);
-                    }
-                    default -> throw new IllegalStateException("Unexpected step: " + currentStep);
-                }
-            }
-
-            // 3) Build the next interactive payload based on the updated state
-            Map<String, Object> interactive;
-            switch (state.getStep()) {
-                case "choose_destination" -> interactive = Map.of(
-                        "type", "flow",
-                        "body", Map.of("text", "Select your destination:"),
-                        "action", Map.of(
-                                "name", "flow",
-                                "parameters", Map.of(
-                                        "flow_message_version", "3.0",
-                                        "flow_token", flowToken,
-                                        "flow_id", BUILDER_FLOW_ID
-                                )
-                        )
-                );
-                case "choose_date" -> interactive = Map.of(
-                        "type", "flow",
-                        "body", Map.of("text", "Select your travel date:"),
-                        "action", Map.of(
-                                "name", "flow",
-                                "parameters", Map.of(
-                                        "flow_message_version", "3.0",
-                                        "flow_token", flowToken,
-                                        "flow_id", BUILDER_FLOW_ID,
-                                        "flow_action_payload", Map.of(
-                                                "data", Map.of("destination", state.getDestination())
-                                        )
-                                )
-                        )
-                );
-                case "confirm" -> interactive = Map.of(
-                        "type", "flow",
-                        "body", Map.of("text",
-                                "Confirm booking for " + state.getDestination()
-                                        + " on " + state.getDate() + "?"),
-                        "action", Map.of(
-                                "name", "flow",
-                                "parameters", Map.of(
-                                        "flow_message_version", "3.0",
-                                        "flow_token", flowToken,
-                                        "flow_id", BUILDER_FLOW_ID,
-                                        "flow_action_payload", Map.of(
-                                                "data", Map.of(
-                                                        "destination", state.getDestination(),
-                                                        "date", state.getDate()
-                                                )
-                                        )
-                                )
-                        )
-                );
-                default -> throw new IllegalStateException("Invalid step for plain exchange: " + state.getStep());
-            }
-
-            // 4) Build full Cloud API /messages payload
-            Map<String, Object> responseBody = Map.of(
-                    "messaging_product", "whatsapp",
-                    "type", "interactive",
-                    "interactive", interactive
-            );
-            return responseBody;
-        });
-    }
 
     /**
      * Called when an unencrypted, builder‐only Flow reaches its final “Complete” action.
@@ -264,33 +156,37 @@ public class FlowService {
     // PART 3: Shared Helper Methods for Encrypted Flows
     //===========================================================================
 
-    /** Rebuilds or initializes your business state from the encrypted FlowDataExchangePayload. */
-    private BookingState rebuildState(FlowDataExchangePayload req) {
+    /** Rebuilds or initializes business state from the encrypted FlowDataExchangePayload. */
+    private BookingState rebuildState(FlowDataExchangePayload payload) {
         BookingState state = new BookingState();
-        state.setStep(req.getScreen());
-        Object dest = req.getData().get("destination");
-        if (dest instanceof String) {
-            state.setDestination((String) dest);
-        }
-        Object date = req.getData().get("date");
-        if (date instanceof String) {
-            state.setDate((String) date);
+        state.setStep(payload.getScreen());
+        if (payload.getData() != null) {
+            Map<String,Object> data = payload.getData();
+            if (data.containsKey("destination")) state.setDestination(data.get("destination").toString());
+            if (data.containsKey("date"))        state.setDate(data.get("date").toString());
+            if (data.containsKey("time"))        state.setTime(data.get("time").toString());
+            if (data.containsKey("full_name"))   state.setFullName(data.get("full_name").toString());
+            if (data.containsKey("email"))       state.setEmail(data.get("email").toString());
+            if (data.containsKey("phone"))       state.setPhone(data.get("phone").toString());
+            if (data.containsKey("num_tickets")) state.setNumTickets(data.get("num_tickets").toString());
+            if (data.containsKey("more_details"))state.setMoreDetails(data.get("more_details").toString());
         }
         return state;
     }
 
     /** Builds the very first screen of an encrypted flow. */
     private NextScreenResponsePayload showInitialScreen(BookingState state) {
-        state.setStep("choose_destination");
+        state.setStep("CHOOSE_DESTINATION");
         return new NextScreenResponsePayload(
-                "choose_destination",
-                Map.of(
-                        "prompt", "Select your destination",
-                        "options", Map.of(
-                                "new_york", "New York",
-                                "boston", "Boston"
-                        )
-                )
+            "CHOOSE_DESTINATION",
+            Map.of(
+                "destinations", new Object[]{
+                    Map.of("id", "new_york", "title", "New York"),
+                    Map.of("id", "boston", "title", "Boston"),
+                    Map.of("id", "washington", "title", "Washington DC"),
+                    Map.of("id", "philadelphia", "title", "Philadelphia")
+                }
+            )
         );
     }
 
@@ -303,52 +199,154 @@ public class FlowService {
      * Processes a user submission from an encrypted flow screen and returns either the next screen
      * (NextScreenResponsePayload) or a final success (FinalScreenResponsePayload).
      */
-    private FlowResponsePayload processSubmission(FlowDataExchangePayload req, BookingState state) {
-        switch (state.getStep()) {
-            case "choose_destination" -> {
-                state.setStep("choose_date");
-                return new NextScreenResponsePayload(
-                        "choose_date",
-                        Map.of("prompt", "Select travel date")
-                );
+    private FlowResponsePayload handleDataExchangeStep(FlowDataExchangePayload req, BookingState state) {
+        String screen = req.getScreen();
+        Map<String,Object> data = req.getData();
+        switch (screen) {
+            case "CHOOSE_DESTINATION" -> {
+                String destination = data.get("destination").toString();
+                state.setDestination(destination);
+                state.setStep("CHOOSE_DATE"); //next screen
+                return new NextScreenResponsePayload("CHOOSE_DATE", Map.of(
+                    "destination", destination,
+                    "dates", new Object[]{
+                        Map.of("id", "2025-06-10", "title", "Tue Jun 10 2025"),
+                        Map.of("id", "2025-06-11", "title", "Wed Jun 11 2025"),
+                        Map.of("id", "2025-06-12", "title", "Thu Jun 12 2025")
+                    }
+                ));
             }
-            case "choose_date" -> {
-                state.setStep("confirm");
-                return new NextScreenResponsePayload(
-                        "confirm_booking",
-                        Map.of(
-                                "destination", state.getDestination(),
-                                "date", state.getDate(),
-                                "message", "Confirm booking?"
-                        )
-                );
+            case "CHOOSE_DATE" -> {
+                String date = data.get("date").toString();
+                state.setDate(date);
+                state.setStep("CHOOSE_TIME");
+                return new NextScreenResponsePayload("CHOOSE_TIME", Map.of(
+                    "destination", state.getDestination(),
+                    "date", date,
+                    "times", new Object[]{
+                        Map.of("id", "08:00", "title", "08:00 AM"),
+                        Map.of("id", "10:00", "title", "10:00 AM"),
+                        Map.of("id", "12:00", "title", "12:00 PM")
+                    }
+                ));
             }
-            case "confirm" -> {
-                state.setStep("completed");
-                return new FinalScreenResponsePayload(
-                        new FinalScreenResponsePayload.ExtensionMessageResponse(
-                                Map.of("receipt_id", "TCKT-" + Instant.now().toString())
-                        )
+            case "CHOOSE_TIME" -> {
+                String time = data.get("time").toString();
+                state.setTime(time);
+                state.setStep("PASSENGER_INFO");
+                return new NextScreenResponsePayload("PASSENGER_INFO", Map.of(
+                    "destination", state.getDestination(),
+                    "date", state.getDate(),
+                    "time", time
+                ));
+            }
+            case "PASSENGER_INFO" -> {
+                String fullName   = data.get("full_name").toString();
+                String email      = data.get("email").toString();
+                String phone      = data.get("phone").toString();
+                String numTickets = data.get("num_tickets").toString();
+                String moreDetails= data.getOrDefault("more_details", "").toString();
+
+                state.setFullName(fullName);
+                state.setEmail(email);
+                state.setPhone(phone);
+                state.setNumTickets(numTickets);
+                state.setMoreDetails(moreDetails);
+                state.setStep("SUMMARY");
+                String appointment = String.format(
+                    "%s on %s at %s", state.getDestination(), state.getDate(), state.getTime()
                 );
+                String details = String.format(
+                    "Name: %s%nEmail: %s%nPhone: %s%n\"%s\"",
+                    fullName, email, phone, moreDetails
+                );
+
+                String summaryText = String.format("%s \n %s", appointment, details);
+
+                Map<String,Object> summaryData = new LinkedHashMap<>();
+                summaryData.put("appointment",  appointment);
+                summaryData.put("details",      details);
+                summaryData.put("destination",  state.getDestination());
+                summaryData.put("date",         state.getDate());
+                summaryData.put("time",         state.getTime());
+                summaryData.put("full_name",    fullName);
+                summaryData.put("email",        email);
+                summaryData.put("phone",        phone);
+                summaryData.put("num_tickets",  numTickets);
+                summaryData.put("more_details", moreDetails);
+                summaryData.put("summary_text", buildSummaryText(summaryData));
+
+                return new NextScreenResponsePayload("SUMMARY", summaryData);
+            }
+            case "SUMMARY" -> {
+                boolean agreed = Boolean.parseBoolean(data.getOrDefault("agree_terms", "false").toString());
+                if (!agreed) {
+                    String appointmentAgain = String.format(
+                        "%s on %s at %s", state.getDestination(), state.getDate(), state.getTime()
+                    );
+                    String detailsAgain = String.format(
+                        "Name: %s%nEmail: %s%nPhone: %s%n\"%s\"",
+                        state.getFullName(), state.getEmail(), state.getPhone(),
+                        state.getMoreDetails() == null ? "" : state.getMoreDetails()
+                    );
+
+                    Map<String,Object> errorData = new LinkedHashMap<>();
+                    errorData.put("appointment",    appointmentAgain);
+                    errorData.put("details",        detailsAgain);
+                    errorData.put("error_message",  "You must agree to the terms to proceed.");
+
+                    return new NextScreenResponsePayload("SUMMARY", errorData);
+                }
+                logger.info("Booking confirmed for data {}", data);
+
+                Map<String,Object> finalParams = new LinkedHashMap<>(data);
+                finalParams.put("flow_token", req.getFlow_token());
+                return new FinalScreenResponsePayload(new FinalScreenResponsePayload.ExtensionMessageResponse(finalParams));
             }
             default -> throw new IllegalStateException("Unexpected step: " + state.getStep());
         }
     }
 
+    private Object buildSummaryText(Map<String, Object> summaryData) {
+        return new StringBuilder()
+            .append("*🗓 Appointment:* ")
+            .append(summaryData.get("appointment")).append("\n")
+            .append("*📝 Details:* ")
+            .append(summaryData.get("details")).append("\n\n")
+            .append("*📍 Destination:* ")
+            .append(summaryData.get("destination")).append("\n")
+            .append("*📅 Date:* ")
+            .append(summaryData.get("date")).append("\n")
+            .append("*⏰ Time:* ")
+            .append(summaryData.get("time")).append("\n")
+            .append("*🎟 Tickets:* ")
+            .append(summaryData.get("num_tickets")).append("\n\n")
+            .append("_Any additional info:_ ")
+            .append(summaryData.get("more_details"))
+            .toString();
+    }
+
     /**
      * Formats finalParams (excluding flow_token) into a user‐friendly string, e.g. "date=2025-05-31 destination=New York".
      */
-    private String formatParams(Map<String, Object> finalParams) {
-        Map<String, Object> copy = new java.util.HashMap<>(finalParams);
-        copy.remove("flow_token");
-        StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, Object> entry : copy.entrySet()) {
-            sb.append(entry.getKey())
-                    .append("=")
-                    .append(entry.getValue())
-                    .append(" ");
-        }
-        return sb.toString().trim();
+    private String formatParams(Map<String, Object> summaryData) {
+        return new StringBuilder()
+            .append("🎫 *Your Ticket Confirmation* 🎫\n\n")
+            .append("*Name:* ")
+            .append(summaryData.get("full_name")).append("\n")
+            .append("*Email:* ")
+            .append(summaryData.get("email")).append("\n")
+            .append("*Phone:* ")
+            .append(summaryData.get("phone")).append("\n\n")
+            .append("*Destination:* ")
+            .append(summaryData.get("destination")).append("\n")
+            .append("*Date:* ")
+            .append(summaryData.get("date")).append("\n")
+            .append("*Time:* ")
+            .append(summaryData.get("time")).append("\n")
+            .append("*Number of Tickets:* ")
+            .append(summaryData.get("num_tickets")).append("\n\n")
+            .toString();
     }
 }
 

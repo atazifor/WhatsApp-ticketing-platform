@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.MGF1ParameterSpec;
 
-public class FlowCryptoUtils {
+public class EncryptionUtils {
 
     private static final String AES_ALGO = "AES/GCM/NoPadding";
     private static final String RSA_ALGO = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";

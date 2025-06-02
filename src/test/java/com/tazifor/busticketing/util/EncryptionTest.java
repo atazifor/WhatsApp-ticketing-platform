@@ -1,7 +1,7 @@
 package com.tazifor.busticketing.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tazifor.busticketing.service.EncryptionService;
+import com.tazifor.busticketing.service.FlowEncryptionService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 public class EncryptionTest {
     @Autowired
-    private EncryptionService encryptionService;
+    private FlowEncryptionService encryptionService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -29,16 +29,16 @@ public class EncryptionTest {
         String json = objectMapper.writeValueAsString(original);
 
         // Generate random AES key and IV
-        byte[] aesKey = FlowCryptoUtils.generateAesKey();
+        byte[] aesKey = EncryptionUtils.generateAesKey();
         byte[] iv = new byte[12];
         new SecureRandom().nextBytes(iv);
 
         // Encrypt AES key with WhatsApp's public key
         PublicKey publicKey = encryptionService.getPublicKey();
-        byte[] encryptedAesKey = FlowCryptoUtils.encryptAesKey(aesKey, publicKey);
+        byte[] encryptedAesKey = EncryptionUtils.encryptAesKey(aesKey, publicKey);
 
         // Encrypt payload using AES
-        byte[] encryptedPayload = FlowCryptoUtils.encryptJson(json, aesKey, iv);
+        byte[] encryptedPayload = EncryptionUtils.encryptJson(json, aesKey, iv);
 
         // Simulate request values (Base64-encoded)
         String encryptedPayloadB64 = Base64.getEncoder().encodeToString(encryptedPayload);
@@ -49,9 +49,9 @@ public class EncryptionTest {
         // Now simulate decrypting it like WhatsApp does
         // ----------------------
         byte[] decodedPayload = Base64.getDecoder().decode(encryptedPayloadB64);
-        byte[] decodedAesKey = FlowCryptoUtils.decryptAesKey(Base64.getDecoder().decode(encryptedAesKeyB64), encryptionService.getPrivateKey());
+        byte[] decodedAesKey = EncryptionUtils.decryptAesKey(Base64.getDecoder().decode(encryptedAesKeyB64), encryptionService.getPrivateKey());
         byte[] decodedIv = Base64.getDecoder().decode(ivB64);
-        String decryptedJson = FlowCryptoUtils.decryptJson(decodedPayload, decodedAesKey, decodedIv);
+        String decryptedJson = EncryptionUtils.decryptJson(decodedPayload, decodedAesKey, decodedIv);
 
         BookingState decryptedState = objectMapper.readValue(decryptedJson, BookingState.class);
 

@@ -12,6 +12,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class MessageService {
+    private static final String FLOW_ID = "1887742978711236";
     private final WhatsAppApiClient apiClient;
     private final TemplateService templateService;
     Logger logger = LoggerFactory.getLogger(MessageService.class);
@@ -34,11 +35,21 @@ public class MessageService {
                 ).subscribe();
             },
             () -> {
-                logger.info("Sending fallback text to {}", from);
-                apiClient.sendText(
-                    from,
-                    "Sorry, I didn’t understand. Type 'Book Ticket' to get started."
-                ).subscribe();
+                // No template chosen. Check for "Book Ticket" or fallback.
+                if (messageText.contains("book")) {
+                    logger.info("Initiating Ticketing Flow for user {}", from);
+                    apiClient.sendFlowMessage(
+                        from,
+                        FLOW_ID,
+                        Map.of()   // optional initial flow_action_payload.data
+                    ).subscribe();
+                }else {
+                    logger.info("Sending fallback text to {}", from);
+                    apiClient.sendText(
+                        from,
+                        "Sorry, I didn’t understand. Type 'Book Ticket' to get started."
+                    ).subscribe();
+                }
             }
         );
     }

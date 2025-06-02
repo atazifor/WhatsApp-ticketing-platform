@@ -15,12 +15,12 @@ import java.util.Map;
  * <p>
  * The Flow Data Exchange request is triggered by WhatsApp when the user:
  * <ul>
+ *     <li>Checks the health of the configured endpoint url for the flow (action = {@code ping})</li>
  *     <li>Initiates a Flow (action = {@code INIT})</li>
  *     <li>Presses the Back button (action = {@code BACK})</li>
  *     <li>Submits a screen (action = {@code data_exchange})</li>
  * </ul>
  * </p>
- *
  * Example decrypted payload:
  * <pre>
  * {

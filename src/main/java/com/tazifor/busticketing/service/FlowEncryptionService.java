@@ -1,7 +1,7 @@
 package com.tazifor.busticketing.service;
 
 import com.tazifor.busticketing.config.properties.EncryptionConfig;
-import com.tazifor.busticketing.util.FlowCryptoUtils;
+import com.tazifor.busticketing.util.EncryptionUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +10,8 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -27,8 +29,8 @@ import java.util.Base64;
  */
 @Service
 @RequiredArgsConstructor
-public class EncryptionService {
-
+public class FlowEncryptionService {
+    private final static Logger logger = LoggerFactory.getLogger(FlowEncryptionService.class);
     @Getter private PrivateKey privateKey;
     @Getter private PublicKey publicKey;
 
@@ -64,15 +66,16 @@ public class EncryptionService {
     public DecryptionResult decryptPayload(String encryptedFlowDataB64,
                                            String encryptedAesKeyB64,
                                            String ivB64) throws Exception {
+        logger.info("Encrypted payload: {} {} {}", encryptedFlowDataB64, encryptedAesKeyB64, ivB64);
         byte[] encryptedFlowData = Base64.getDecoder().decode(encryptedFlowDataB64);
         byte[] encryptedAesKey   = Base64.getDecoder().decode(encryptedAesKeyB64);
         byte[] iv                = Base64.getDecoder().decode(ivB64);
 
         // 1. decrypt AES key with RSA private key
-        byte[] aesKey = FlowCryptoUtils.decryptAesKey(encryptedAesKey, privateKey);
+        byte[] aesKey = EncryptionUtils.decryptAesKey(encryptedAesKey, privateKey);
 
         // 2. decrypt JSON payload with AES/GCM
-        String clearJson = FlowCryptoUtils.decryptJson(encryptedFlowData, aesKey, iv);
+        String clearJson = EncryptionUtils.decryptJson(encryptedFlowData, aesKey, iv);
 
         return new DecryptionResult(clearJson, aesKey, iv);
     }
@@ -81,25 +84,19 @@ public class EncryptionService {
      * Encrypts a clear JSON string representing the new state using the provided AES key and IV.
      * Returns the Base64-encoded ciphertext.
      */
-    public String encryptState(String clearJson, byte[] aesKey, byte[] iv) throws Exception {
+    public String encryptPayload(String clearJson, byte[] aesKey, byte[] iv) throws Exception {
         // WhatsApp expects encryption with a flipped IV
-        byte[] flippedIv = FlowCryptoUtils.flipIv(iv);
-        byte[] cipherBytes = FlowCryptoUtils.encryptJson(clearJson, aesKey, flippedIv);
+        byte[] flippedIv = EncryptionUtils.flipIv(iv);
+        byte[] cipherBytes = EncryptionUtils.encryptJson(clearJson, aesKey, flippedIv);
         return Base64.getEncoder().encodeToString(cipherBytes);
     }
 
     /**
-     * Container for the results of decryption:
-     * - the clear JSON payload
-     * - the AES key for subsequent encryption
-     * - the original IV
-     */
-    @Getter
-    @RequiredArgsConstructor
-    public static class DecryptionResult {
-        private final String clearJson;
-        private final byte[] aesKey;
-        private final byte[] iv;
-
+         * Container for the results of decryption:
+         * - the clear JSON payload
+         * - the AES key for subsequent encryption
+         * - the original IV
+         */
+        public record DecryptionResult(String clearJson, byte[] aesKey, byte[] iv) {
     }
 }

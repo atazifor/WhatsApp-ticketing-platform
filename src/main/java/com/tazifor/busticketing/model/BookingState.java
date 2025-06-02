@@ -1,13 +1,19 @@
 package com.tazifor.busticketing.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+/**
+ * Simple in‐memory state for the example bus‐ticket flow.
+ */
+@Data
 public class BookingState {
-    private String step; // destination, date_selection, etc.
+    private String step;
     private String destination;
     private String date;
-    private String ticketNumber;
+    private String time;
+    private String fullName;
+    private String email;
+    private String phone;
+    private String numTickets;
+    private String moreDetails;
 }

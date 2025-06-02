@@ -4,19 +4,31 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 /**
- * Response sent to WhatsApp when the flow is completed.
+ * When the flow is complete, WhatsApp expects {"screen":"SUCCESS","data":{ … }}.
+ * We build one of these, serialize to Map<String,Object>, then encrypt that JSON.
  *
- * This triggers a "Flow Completed" message to be sent to the user,
- * and the flow UI is closed.
+ * Plain text (before encryption) example:
+ * {
+ *   "screen": "SUCCESS",
+ *   "data": {
+ *     "extension_message_response": {
+ *       "params": {
+ *         "flow_token": "<UUID>"
+ *       }
+ *     }
+ *   }
+ * }
  */
 @Data
 @NoArgsConstructor
 public final class FinalScreenResponsePayload implements FlowResponsePayload {
-
+    private final static Logger logger = LoggerFactory.getLogger(FinalScreenResponsePayload.class);
     /**
      * Must always be "SUCCESS" to signal Flow completion.
      */
@@ -27,10 +39,10 @@ public final class FinalScreenResponsePayload implements FlowResponsePayload {
      * Must include "flow_token", and may contain other parameters.
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private ExtensionMessageResponse data;
+    private Map<String, Object> data;
 
     public FinalScreenResponsePayload(ExtensionMessageResponse data) {
-        this.data = data;
+        this.data = Map.of("extension_message_response", data);
     }
 
     @Data
@@ -41,6 +53,7 @@ public final class FinalScreenResponsePayload implements FlowResponsePayload {
 
         public void validate() {
             if (params == null || !params.containsKey("flow_token")) {
+                logger.warn("Missing required 'flow_token' in params");
                 throw new IllegalArgumentException("Missing required 'flow_token' in params");
             }
         }

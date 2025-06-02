@@ -8,11 +8,17 @@ import lombok.NoArgsConstructor;
 import java.util.Map;
 
 /**
- * Response sent to WhatsApp after a data exchange request (except the final step).
+ * When you decrypt a request and decide “the next screen is X with data Y,”
+ * build one of these and serialize it to a Map; then we encrypt the resulting JSON.
  *
- * This payload tells the client which screen to render next and what data to use.
- * If an error occurs (e.g. invalid user input), include an optional error_message
- * inside the `data` map. This will display a snackbar error to the user.
+ * Plain text (before encryption) example:
+ * {
+ *   "screen": "CHOOSE_DATE",
+ *   "data": {
+ *     "destination": "new_york",
+ *     "dates": [ { "id":"2025-06-10","title":"Tue Jun 10 2025" } … ]
+ *   }
+ * }
  */
 @Data
 @NoArgsConstructor
