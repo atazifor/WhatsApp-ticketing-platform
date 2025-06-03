@@ -274,45 +274,27 @@ public class FlowService {
     }
 
     private Object buildSummaryText(Map<String, Object> summaryData) {
-        return new StringBuilder()
-            .append("*🗓 Appointment:* ")
-            .append(summaryData.get("appointment")).append("\n")
-            .append("*📝 Details:* ")
-            .append(summaryData.get("details")).append("\n\n")
-            .append("*📍 Destination:* ")
-            .append(summaryData.get("destination")).append("\n")
-            .append("*📅 Date:* ")
-            .append(summaryData.get("date")).append("\n")
-            .append("*⏰ Time:* ")
-            .append(summaryData.get("time")).append("\n")
-            .append("*🎟 Tickets:* ")
-            .append(summaryData.get("num_tickets")).append("\n\n")
-            .append("_Any additional info:_ ")
-            .append(summaryData.get("more_details"))
-            .toString();
+        return "*🗓 Appointment:* " + summaryData.get("appointment") + "\n" +
+            "*📝 Details:* " + summaryData.get("details") + "\n\n" +
+            "*📍 Destination:* " + summaryData.get("destination") + "\n" +
+            "*📅 Date:* " + summaryData.get("date") + "\n" +
+            "*⏰ Time:* " + summaryData.get("time") + "\n" +
+            "*🎟 Tickets:* " + summaryData.get("num_tickets") + "\n\n" +
+            "_Any additional info:_ " + summaryData.get("more_details");
     }
 
     /**
      * Formats finalParams (excluding flow_token) into a user‐friendly string, e.g. "date=2025-05-31 destination=New York".
      */
     private String formatParams(Map<String, Object> summaryData) {
-        return new StringBuilder()
-            .append("🎫 *Your Ticket Confirmation* 🎫\n\n")
-            .append("*Name:* ")
-            .append(summaryData.get("full_name")).append("\n")
-            .append("*Email:* ")
-            .append(summaryData.get("email")).append("\n")
-            .append("*Phone:* ")
-            .append(summaryData.get("phone")).append("\n\n")
-            .append("*Destination:* ")
-            .append(summaryData.get("destination")).append("\n")
-            .append("*Date:* ")
-            .append(summaryData.get("date")).append("\n")
-            .append("*Time:* ")
-            .append(summaryData.get("time")).append("\n")
-            .append("*Number of Tickets:* ")
-            .append(summaryData.get("num_tickets")).append("\n\n")
-            .toString();
+        return "🎫 *Your Ticket Confirmation* 🎫\n\n" +
+            "*Name:* " + summaryData.get("full_name") + "\n" +
+            "*Email:* " + summaryData.get("email") + "\n" +
+            "*Phone:* " + summaryData.get("phone") + "\n\n" +
+            "*Destination:* " + summaryData.get("destination") + "\n" +
+            "*Date:* " + summaryData.get("date") + "\n" +
+            "*Time:* " + summaryData.get("time") + "\n" +
+            "*Number of Tickets:* " + summaryData.get("num_tickets") + "\n\n";
     }
 }
 
