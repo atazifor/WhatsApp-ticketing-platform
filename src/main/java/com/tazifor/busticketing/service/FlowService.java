@@ -33,7 +33,6 @@ public class FlowService {
     /**
      * Decrypts the incoming encrypted payload (FlowEncryptedPayload), runs flow logic, re‐encrypts the new state,
      * and returns a Map suitable for serialization back to WhatsApp’s Flow data‐exchange protocol.
-     *
      * Endpoint path: POST /webhook/flow/data-exchange
      *
      * @param encryptedPayload the raw encrypted input from WhatsApp
@@ -229,8 +228,6 @@ public class FlowService {
                     "Name: %s%nEmail: %s%nPhone: %s%n\"%s\"",
                     fullName, email, phone, moreDetails
                 );
-
-                String summaryText = String.format("%s \n %s", appointment, details);
 
                 Map<String,Object> summaryData = new LinkedHashMap<>();
                 summaryData.put("appointment",  appointment);

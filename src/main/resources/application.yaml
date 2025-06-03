@@ -7,7 +7,6 @@ whatsapp:
 
   app:
     secret: ${ZAP_TEST_APP_SECRET}
-    dev-mode: true
   api:
     base-url: https://graph.facebook.com
     version: v22.0
