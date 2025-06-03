@@ -15,10 +15,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Orchestrates both encrypted (endpoint‐powered) and unencrypted (builder‐only) Flows.
@@ -31,23 +29,6 @@ public class FlowService {
     private final FlowEncryptionService encryptionService;
     private final WhatsAppApiClient apiClient;
     private final ObjectMapper objectMapper;
-
-    //
-    // In‐memory store for unencrypted (builder‐only) flow state, keyed by flow_token.
-    // In production you might use Redis or a database instead.
-    //
-    private final Map<String, BookingState> plainStateStore = new ConcurrentHashMap<>();
-
-    //
-    // If you have a single Flow ID for unencrypted flows, configure it here.
-    // (For endpoint‐powered flows, the incoming payload already includes flow_id metadata.)
-    //
-    private static final String BUILDER_FLOW_ID = "YOUR_UNENCRYPTED_FLOW_ID";
-
-
-    //===========================================================================
-    // PART 1: Encrypted, Endpoint‐Powered Flow
-    //===========================================================================
 
     /**
      * Decrypts the incoming encrypted payload (FlowEncryptedPayload), runs flow logic, re‐encrypts the new state,
@@ -121,11 +102,6 @@ public class FlowService {
         });
     }
 
-
-    //===========================================================================
-    // PART 2: Unencrypted (“Builder‐Only”) Flow
-    //===========================================================================
-
     /**
      * Called when an unencrypted, builder‐only Flow reaches its final “Complete” action.
      * You receive whatever arbitrary JSON was defined in the Complete action under response_json.
@@ -146,15 +122,8 @@ public class FlowService {
                         __ -> logger.info("Sent completion message to {}", from),
                         err -> logger.error("Error sending completion message to {}: {}", from, err.getMessage())
                 );
-
-        // Clean up in‐memory state
-        plainStateStore.remove(flowToken);
     }
 
-
-    //===========================================================================
-    // PART 3: Shared Helper Methods for Encrypted Flows
-    //===========================================================================
 
     /** Rebuilds or initializes business state from the encrypted FlowDataExchangePayload. */
     private BookingState rebuildState(FlowDataExchangePayload payload) {

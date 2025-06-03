@@ -6,6 +6,7 @@ whatsapp:
     public-key-path: keys/public_key.pem
 
   app:
+    secret: ${ZAP_TEST_APP_SECRET}
     dev-mode: true
   api:
     base-url: https://graph.facebook.com
