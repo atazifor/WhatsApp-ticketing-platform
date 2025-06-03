@@ -3,7 +3,7 @@ package com.tazifor.busticketing.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tazifor.busticketing.dto.crypto.FlowEncryptedPayload;
 import com.tazifor.busticketing.service.FlowService;
-import com.tazifor.busticketing.util.HMACUtils;
+import com.tazifor.busticketing.util.SignatureValidator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -27,16 +27,7 @@ public class FlowEndpointController {
     // for deserializing raw JSON into FlowEncryptedPayload
     private final ObjectMapper objectMapper;
 
-    @Value("${whatsapp.app.secret}")
-    private String appSecret;
-
-
-    @PostConstruct
-    public void init() {
-        logger.info("App secret: {}", appSecret);
-        logger.info("FlowService: {}", flowService);
-        logger.info("ObjectMapper: {}", objectMapper);
-    }
+    private final SignatureValidator signatureValidator;
 
     /**
      * Handles data exchange calls (INIT, BACK, data_exchange, ping).
@@ -57,7 +48,7 @@ public class FlowEndpointController {
                 String rawBody = new String(rawBytes, StandardCharsets.UTF_8);
 
                 // 2) Verify HMAC-SHA256 against “sha256=<hex>”
-                if (!HMACUtils.isSignatureValid(rawBody, signatureHeader, appSecret)) {
+                if (!signatureValidator.isSignatureValid(rawBody, signatureHeader)) {
                     // 432 = signature mismatch
                     return Mono.just(ResponseEntity.status(432).build());
                 }

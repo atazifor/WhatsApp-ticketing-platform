@@ -2,17 +2,24 @@ package com.tazifor.busticketing.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 
-public class HMACUtils {
-    private final static Logger logger = LoggerFactory.getLogger(HMACUtils.class);
+@Component
+public class SignatureValidator {
+    private final static Logger logger = LoggerFactory.getLogger(SignatureValidator.class);
+
+    @Value("${whatsapp.app.secret}")
+    private String appSecret;
+
     /**
      * Compute HMAC-SHA256(rawBody, appSecret) and compare (timing-safe) to the hex from X-Hub-Signature-256.
      */
-    public static boolean isSignatureValid(String rawBody, String signatureHeader, String appSecret) {
+    public boolean isSignatureValid(String rawBody, String signatureHeader) {
         if (appSecret == null || appSecret.isEmpty()) {
             // If no secret is configured, skip validation but log a warning.
             logger.warn("Warning: app.secret not set; skipping request signature verification.");

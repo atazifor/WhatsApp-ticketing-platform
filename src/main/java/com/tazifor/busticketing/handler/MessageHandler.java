@@ -102,7 +102,7 @@ public class MessageHandler {
 
         logger.info("Handling Flow completion with params: {}", finalParams);
         // Pass finalParams (e.g. {flow_token: "...", arrival_date: "...", ...}) to your completion logic
-        flowService.handlePlainCompletion(finalParams, from);
+        flowService.handleFlowCompletion(finalParams, from);
 
     }
 }
