@@ -1,19 +1,24 @@
 package com.tazifor.busticketing.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tazifor.busticketing.config.properties.WhatsAppProperties;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.CorePublisher;
 import reactor.core.publisher.Mono;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 
@@ -31,8 +36,8 @@ public class WhatsAppApiClient {
     @Autowired
     public WhatsAppApiClient(WhatsAppProperties config) {
         // Preconfigure WebClient with base URL and Authorization header
-        //"https://graph.facebook.com/v22.0/" + phoneNumberId + "/messages"
-        String uri = String.format("%s/%s/%s/messages", config.baseUrl(), config.version(), config.phoneNumberId());
+        //"https://graph.facebook.com/v22.0/" + phoneNumberId "
+        String uri = String.format("%s/%s/%s", config.baseUrl(), config.version(), config.phoneNumberId());
         this.webClient = WebClient.builder()
             .baseUrl(uri)
             .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + config.accessToken())
@@ -71,6 +76,7 @@ public class WhatsAppApiClient {
 
         return getWebClient()
             .post()
+            .uri("/messages")
             .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(String.class)
@@ -93,6 +99,7 @@ public class WhatsAppApiClient {
     public Mono<Void> sendRawMessage(Map<String, Object> payload) {
         return webClient
             .post()
+            .uri("/messages")
             .bodyValue(payload)
             .retrieve()
             .bodyToMono(Void.class);
@@ -149,9 +156,113 @@ public class WhatsAppApiClient {
 
         return webClient
             .post()
+            .uri("/messages")
             .bodyValue(body)
             .retrieve()
             .bodyToMono(Void.class);
+    }
+
+    /**
+     * 1) Decode the Base64 data URI, write to a temp PNG file.
+     * 2) Build a MultiValueMap with keys "messaging_product", "type", and "file".
+     * 3) POST multipart/form‐data to /media.
+     * 4) Delete the temp file.
+     * 5) Return the media_id.
+     */
+    public Mono<String> uploadMedia(String base64DataUri) {
+        return Mono.fromCallable(() -> {
+                if (base64DataUri == null) {
+                    throw new IllegalArgumentException("Base64 data URI is null");
+                }
+
+                // Strip "data:image/...;base64," prefix if present
+                String rawBase64;
+                if (base64DataUri.startsWith("data:image/")) {
+                    int commaIndex = base64DataUri.indexOf(',');
+                    if (commaIndex < 0) {
+                        throw new IllegalArgumentException("Invalid data URI (no comma): " + base64DataUri);
+                    }
+                    rawBase64 = base64DataUri.substring(commaIndex + 1);
+                } else {
+                    rawBase64 = base64DataUri;
+                }
+
+                rawBase64 = rawBase64.trim().replaceAll("\\s+", "");
+
+                // Decode Base64 into PNG bytes
+                byte[] pngBytes = java.util.Base64.getDecoder().decode(rawBase64);
+
+                // Write bytes to a temp file
+                File tempFile = File.createTempFile("wa_upload_", ".png");
+                try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                    fos.write(pngBytes);
+                }
+                return tempFile;
+            })
+            .flatMap(tempFile -> {
+                // Build multipart/form-data map
+                MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
+                parts.add("messaging_product", "whatsapp");
+                parts.add("type", "image/png");
+                // FileSystemResource will handle Content-Disposition and content-type
+                parts.add("file", new FileSystemResource(tempFile));
+
+                return webClient
+                    .post()
+                    .uri("/media")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(BodyInserters.fromMultipartData(parts))
+                    .retrieve()
+                    .onStatus(status -> status.isError(), response ->
+                        response.bodyToMono(String.class).flatMap(bodyStr -> {
+                            // Log full error body from WhatsApp
+                            System.err.printf("Media upload failed: %s → %s%n", response.statusCode(), bodyStr);
+                            return Mono.error(new RuntimeException("Media upload error: " + bodyStr));
+                        })
+                    )
+                    .bodyToMono(Map.class)
+                    .flatMap(json -> {
+                        Object idObj = json.get("id");
+                        if (idObj instanceof String) {
+                            String mediaId = (String) idObj;
+                            return Mono.just(mediaId);
+                        } else {
+                            return Mono.error(new RuntimeException("Unexpected /media response: " + json));
+                        }
+                    })
+                    .doFinally(signal -> {
+                        try {
+                            Files.deleteIfExists(tempFile.toPath());
+                        } catch (Exception ex) {
+                            System.err.println("Could not delete temp file: " + tempFile);
+                        }
+                    });
+            });
+    }
+
+    /**
+     * 2) Once uploadMediaFromBase64(...) yields a media_id, call /messages to send the image.
+     */
+    public Mono<Void> sendImage(String to, String base64DataUri, String caption) {
+        return uploadMedia(base64DataUri)
+            .flatMap(mediaId -> {
+                Map<String, Object> imageObj = Map.of(
+                    "id", mediaId,
+                    "caption", caption
+                );
+                Map<String, Object> body = Map.of(
+                    "messaging_product", "whatsapp",
+                    "to", to,
+                    "type", "image",
+                    "image", imageObj
+                );
+                return webClient
+                    .post()
+                    .uri("/messages")
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Void.class);
+            });
     }
 
     // Helper to generate a random flow token if you need one

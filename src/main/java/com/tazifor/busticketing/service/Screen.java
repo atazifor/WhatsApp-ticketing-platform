@@ -7,7 +7,9 @@ import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.model.BookingState;
 import com.tazifor.busticketing.util.BeanUtil;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public enum Screen {
@@ -57,41 +59,36 @@ public enum Screen {
             String time = payload.getData().get("time").toString();
             state.setTime(time);
 
-            // 2) Move to seat-selection step
+            // 2) Advance our state machine to CHOOSE_SEAT
             state.setStep(STEP_CHOOSE_SEAT);
 
-            // 3) Load cached Base64 for the 10-seat image
-            var imageCache = BeanUtil.getBean(ImageBase64Cache.class);
-            String busBase64 = imageCache.getBase64("bus_10_seats");
+            // 3) Fetch the cached bus image + seat coordinates from BusLayoutService
+            BusLayoutService layoutService = BeanUtil.getBean(BusLayoutService.class);
+            String busBase64 = layoutService.getBase64BusImage(); // “data:image/png;base64,…”
+            Map<String, Point> seatCoords = layoutService.getSeatCoordinates();
 
-            if (busBase64 == null) {
-                // Show error if image not available
+            if (busBase64 == null || seatCoords == null || seatCoords.isEmpty()) {
+                // If for some reason the service didn’t produce an image or any seats
                 Map<String,Object> err = Map.of(
                     "error_message", "🚧 Unable to load seat map right now."
                 );
                 return new NextScreenResponsePayload(STEP_CHOOSE_SEAT, err);
             }
 
-            // 4) Prepare the dynamic data for that screen:
-            //    - data.image = <Base64 string>
-            //    - data.seats = [ {id:"A1",title:"A1"}, {id:"B1",title:"B1"}, … ]
-            List<String> seatIds = List.of(
-                "A1","B1","C1",
-                "A2","B2","C2",
-                "A3","B3",
-                "A4","B4"
-            );
-
-            // 4a) Build List<Map<String,String>> where each map is { "id": seatId, "title": seatId }
-            List<Map<String, Object>> seats = seatIds.stream()
-                .map(id -> Map.of(
-                        "id", id,
-                        "title", id,
-                    "on-select-action", Map.of("name", "update_data",
+            // 4) Build the “seats” list dynamically from seatCoords.keySet()
+            //    Each entry is a Map: { "id": seatId, "title": seatId, "on-select-action": { … } }
+            List<Map<String,Object>> seats = seatCoords.keySet().stream()
+                .sorted() // optional: sort seat IDs lexicographically (A1, A2, A3, … B1, B2, …)
+                .map(seatId -> Map.<String,Object>of(
+                    "id", seatId,
+                    "title", seatId,
+                    // on-select-action must have an empty payload so Flow doesn’t reject
+                    "on-select-action", Map.of(
+                        "name",    "update_data",
                         "enabled", true,
-                        "payload", Map.of() ))
-
-                )
+                        "payload", Map.of()  // payload is intentionally empty
+                    )
+                ))
                 .collect(Collectors.toList());
 
             // 4b) Put into a single data map

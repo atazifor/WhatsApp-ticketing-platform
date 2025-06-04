@@ -9,6 +9,7 @@ import com.tazifor.busticketing.dto.FinalScreenResponsePayload;
 import com.tazifor.busticketing.dto.crypto.FlowEncryptedPayload;
 import com.tazifor.busticketing.model.BookingState;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tazifor.busticketing.util.ImageOverlayUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,6 +31,7 @@ public class FlowService {
     private final FlowEncryptionService encryptionService;
     private final WhatsAppApiClient apiClient;
     private final ObjectMapper objectMapper;
+    private final ImageOverlayUtil imageOverlayUtil;
 
     /**
      * Decrypts the incoming encrypted payload (FlowEncryptedPayload), runs flow logic, re‐encrypts the new state,
@@ -121,13 +124,23 @@ public class FlowService {
 
         // Perform any business logic here (e.g. persist appointment to DB)
 
+        // (3) Generate the overlaid PNG as a Base64 string
+        //     We assume you stored chosenSeats into your BookingState earlier:
+        List<String> chosenSeats = (List<String>) finalParams.getOrDefault("seat", List.of());
+        String overlaidBase64 = imageOverlayUtil.createImageWithHighlights(chosenSeats);
+
         // Send a simple text confirmation (you could also send a template)
-        String confirmationText = "✅ Booking confirmed! Details: " + formatParams(finalParams);
-        apiClient.sendText(from, confirmationText)
+        String confirmationText = "✅ Booking confirmed! Details: \n" + formatParams(finalParams);
+        /*apiClient.sendText(from, confirmationText)
                 .subscribe(
                         __ -> logger.info("Sent completion message to {}", from),
                         err -> logger.error("Error sending completion message to {}: {}", from, err.getMessage())
-                );
+                );*/
+        apiClient.sendImage(from, overlaidBase64, confirmationText)
+            .subscribe(
+                __ -> logger.info("Sent final ticket image to {}", from),
+                err -> logger.error("Error sending final ticket image to {}: {}", from, err.getMessage())
+            );
     }
 
 
