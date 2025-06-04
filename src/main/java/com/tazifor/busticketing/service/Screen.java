@@ -5,10 +5,10 @@ import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.FlowResponsePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.util.BeanUtil;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public enum Screen {
     CHOOSE_DESTINATION {
@@ -53,14 +53,107 @@ public enum Screen {
         @Override
         public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload,
                                                       BookingState state) {
+            // 1) Extract chosen time
             String time = payload.getData().get("time").toString();
             state.setTime(time);
+
+            // 2) Move to seat-selection step
+            state.setStep(STEP_CHOOSE_SEAT);
+
+            // 3) Load cached Base64 for the 10-seat image
+            var imageCache = BeanUtil.getBean(ImageBase64Cache.class);
+            String busBase64 = imageCache.getBase64("bus_10_seats");
+
+            if (busBase64 == null) {
+                // Show error if image not available
+                Map<String,Object> err = Map.of(
+                    "error_message", "🚧 Unable to load seat map right now."
+                );
+                return new NextScreenResponsePayload(STEP_CHOOSE_SEAT, err);
+            }
+
+            // 4) Prepare the dynamic data for that screen:
+            //    - data.image = <Base64 string>
+            //    - data.seats = [ {id:"A1",title:"A1"}, {id:"B1",title:"B1"}, … ]
+            List<String> seatIds = List.of(
+                "A1","B1","C1",
+                "A2","B2","C2",
+                "A3","B3",
+                "A4","B4"
+            );
+
+            // 4a) Build List<Map<String,String>> where each map is { "id": seatId, "title": seatId }
+            List<Map<String, Object>> seats = seatIds.stream()
+                .map(id -> Map.of(
+                        "id", id,
+                        "title", id,
+                    "on-select-action", Map.of("name", "update_data",
+                        "enabled", true,
+                        "payload", Map.of() ))
+
+                )
+                .collect(Collectors.toList());
+
+            // 4b) Put into a single data map
+            Map<String,Object> data = new LinkedHashMap<>();
+            data.put("destination", state.getDestination());
+            data.put("date",        state.getDate());
+            data.put("time",        state.getTime());
+            data.put("image", busBase64);
+            data.put("seats", seats);
+
+
+            // 5) Return payload whose `data` matches your JSON layout’s placeholders
+            return new NextScreenResponsePayload(STEP_CHOOSE_SEAT, data);
+        }
+    },
+    CHOOSE_SEAT {
+        @Override
+        public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload,
+                                                      BookingState state) {
+            // 1) The user just tapped a chip (e.g. "B3")
+            Object chosenSeats = payload.getData().get("seat");
+            Collection<String> seats = (Collection<String>) chosenSeats;
+            state.setChosenSeats(seats);
+
+            // 2) Persist or mark the seat as taken if needed
+            SeatService seatService = BeanUtil.getBean(SeatService.class);
+            seats.forEach(seat -> {
+                seatService.markSeatTaken(payload.getFlow_token(), seat);
+            });
+
+
+            // 3) Now advance to PASSENGER_INFO
             state.setStep(STEP_PASSENGER_INFORMATION);
-            return new NextScreenResponsePayload(STEP_PASSENGER_INFORMATION, Map.of(
-                "destination", state.getDestination(),
-                "date", state.getDate(),
-                "time", time
-            ));
+
+            // 4) Build the PASSENGER_INFO payload (ask for name/email/phone/etc)
+            //    This is exactly the same shape as before, e.g.:
+            Map<String,Object> fields = new LinkedHashMap<>();
+            fields.put("destination", state.getDestination());
+            fields.put("date",        state.getDate());
+            fields.put("time",        state.getTime());
+            fields.put("seat",        chosenSeats);
+
+            // The Flow builder (in your Companion JSON) expects something like:
+            // { "type":"text_entry", "name":"full_name", "label":"Full Name" }, etc.
+            // But if your PASSENGER_INFO is built via NextScreenResponsePayload, you might structure it as:
+            //    new NextScreenResponsePayload("PASSENGER_INFO", fields);
+            return new NextScreenResponsePayload(STEP_PASSENGER_INFORMATION, fields);
+        }
+
+        private Collection<String> toSeatCollection(Object chosenSeats) {
+            Collection<String> seats;
+            if (chosenSeats == null) {
+                seats = Collections.emptyList();
+            } else if (chosenSeats instanceof Collection<?> c) {
+                seats = c.stream()
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .toList();
+            } else {
+                seats = Collections.singletonList(chosenSeats.toString());
+            }
+            return seats;
         }
     },
     PASSENGER_INFO {
@@ -88,6 +181,7 @@ public enum Screen {
             summaryData.put("destination",   state.getDestination());
             summaryData.put("date",          state.getDate());
             summaryData.put("time",          state.getTime());
+            summaryData.put("seat",          state.getChosenSeats());
             summaryData.put("full_name",     fullName);
             summaryData.put("email",         email);
             summaryData.put("phone",         phone);
@@ -122,6 +216,7 @@ public enum Screen {
             finalParams.put("destination",  state.getDestination());
             finalParams.put("date",         state.getDate());
             finalParams.put("time",         state.getTime());
+            finalParams.put("seat",          state.getChosenSeats());
             finalParams.put("full_name",    state.getFullName());
             finalParams.put("email",        state.getEmail());
             finalParams.put("phone",        state.getPhone());
@@ -134,6 +229,7 @@ public enum Screen {
         }
     };
 
+    public static final String STEP_CHOOSE_SEAT = "CHOOSE_SEAT";
     public static final String STEP_CHOOSE_DATE = "CHOOSE_DATE";
     public static final String STEP_CHOOSE_TIME = "CHOOSE_TIME";
     public static final String STEP_PASSENGER_INFORMATION = "PASSENGER_INFO";
@@ -168,11 +264,26 @@ public enum Screen {
     }
 
     private static String buildSummaryText(Map<String, Object> summaryData) {
+        Object seatObj = summaryData.get("seat");
+        String seatDisplay;
+
+        if (seatObj == null) {
+            seatDisplay = "Not selected";
+        } else if (seatObj instanceof Collection<?>) {
+            Collection<?> seats = (Collection<?>) seatObj;
+            seatDisplay = seats.isEmpty() ? "Not selected" :
+                seats.size() == 1 ? seats.iterator().next().toString() :
+                    String.join(", ", seats.stream().map(Object::toString).toList());
+        } else {
+            seatDisplay = seatObj.toString();
+        }
+
         return "*🗓 Appointment:* " + summaryData.get("appointment") + "\n" +
             "*📝 Details:* "     + summaryData.get("details")     + "\n\n" +
             "*📍 Destination:* " + summaryData.get("destination") + "\n" +
             "*📅 Date:* "        + summaryData.get("date")        + "\n" +
             "*⏰ Time:* "        + summaryData.get("time")        + "\n" +
+            "*💺 Seat(s):* "         + seatDisplay        + "\n" +
             "*🎟 Tickets:* "     + summaryData.get("num_tickets") + "\n\n" +
             "_Any additional info:_ " + summaryData.get("more_details");
     }

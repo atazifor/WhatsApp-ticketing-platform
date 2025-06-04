@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -82,6 +83,7 @@ public class FlowService {
                 case "data_exchange":
                     // Look up enum by req.getScreen() and invoke its handle(...)
                     String currentScreen = decryptedRequestPayload.getScreen();
+                    logger.info("data_exchange for screen {} with payload {}", currentScreen, decryptedRequestPayload);
                     Screen screen = Screen.valueOf(currentScreen);
                     ui = screen.handleDataExchange(decryptedRequestPayload, state);
                     break;
@@ -138,6 +140,7 @@ public class FlowService {
             if (data.containsKey("destination")) state.setDestination(data.get("destination").toString());
             if (data.containsKey("date"))        state.setDate(data.get("date").toString());
             if (data.containsKey("time"))        state.setTime(data.get("time").toString());
+            if (data.containsKey("seat"))        state.setChosenSeats((Collection<String>) data.get("seat"));
             if (data.containsKey("full_name"))   state.setFullName(data.get("full_name").toString());
             if (data.containsKey("email"))       state.setEmail(data.get("email").toString());
             if (data.containsKey("phone"))       state.setPhone(data.get("phone").toString());
@@ -174,6 +177,19 @@ public class FlowService {
      * Formats finalParams (excluding flow_token) into a user‐friendly string, e.g. "date=2025-05-31 destination=New York".
      */
     private String formatParams(Map<String, Object> summaryData) {
+        Object seatObj = summaryData.get("seat");
+        String seatDisplay;
+
+        if (seatObj == null) {
+            seatDisplay = "Not selected";
+        } else if (seatObj instanceof Collection<?>) {
+            Collection<?> seats = (Collection<?>) seatObj;
+            seatDisplay = seats.isEmpty() ? "Not selected" :
+                seats.size() == 1 ? seats.iterator().next().toString() :
+                    String.join(", ", seats.stream().map(Object::toString).toList());
+        } else {
+            seatDisplay = seatObj.toString();
+        }
         return "🎫 *Your Ticket Confirmation* 🎫\n\n" +
             "*Name:* " + summaryData.get("full_name") + "\n" +
             "*Email:* " + summaryData.get("email") + "\n" +
@@ -181,6 +197,7 @@ public class FlowService {
             "*Destination:* " + summaryData.get("destination") + "\n" +
             "*Date:* " + summaryData.get("date") + "\n" +
             "*Time:* " + summaryData.get("time") + "\n" +
+            "*💺 Seat(s):* "         + seatDisplay        + "\n" +
             "*Number of Tickets:* " + summaryData.get("num_tickets") + "\n\n";
     }
 }
