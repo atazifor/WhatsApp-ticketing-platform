@@ -9,6 +9,7 @@ import com.tazifor.busticketing.dto.FinalScreenResponsePayload;
 import com.tazifor.busticketing.dto.crypto.FlowEncryptedPayload;
 import com.tazifor.busticketing.model.BookingState;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tazifor.busticketing.service.screens.ScreenHandler;
 import com.tazifor.busticketing.util.ImageOverlayUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -29,6 +30,7 @@ public class FlowService {
     private static final Logger logger = LoggerFactory.getLogger(FlowService.class);
 
     private final FlowEncryptionService encryptionService;
+    private final Map<String, ScreenHandler>  screenHandlers;
     private final WhatsAppApiClient apiClient;
     private final ObjectMapper objectMapper;
     private final ImageOverlayUtil imageOverlayUtil;
@@ -87,8 +89,8 @@ public class FlowService {
                     // Look up enum by req.getScreen() and invoke its handle(...)
                     String currentScreen = decryptedRequestPayload.getScreen();
                     logger.info("data_exchange for screen {} with payload {}", currentScreen, decryptedRequestPayload);
-                    Screen screen = Screen.valueOf(currentScreen);
-                    ui = screen.handleDataExchange(decryptedRequestPayload, state);
+                    ScreenHandler screenHandler = screenHandlers.get(currentScreen);
+                    ui = screenHandler.handleDataExchange(decryptedRequestPayload, state);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown action: " + action);
