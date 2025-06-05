@@ -38,7 +38,19 @@ public class MessageService {
                 // No template chosen. Check for "Book Ticket" or fallback.
                 if (messageText.contains("book")) {
                     logger.info("Initiating Ticketing Flow for user {}", from);
+
+                    String richTextBody = "🚌 *Welcome to SpidTix!*\n\n"
+                        + "Easily book bus tickets or find quick answers.\n\n"
+                        + "- 🎟️ Book your tickets\n"
+                        + "- ❓ FAQs and common questions\n"
+                        + "- 🎫 View your past bookings\n"
+                        + "Tap below to start!";
+
+                    String cta = " START →";
+
                     apiClient.sendFlowMessage(
+                        richTextBody,
+                        cta,
                         from,
                         FLOW_ID,
                         Map.of()   // optional initial flow_action_payload.data
@@ -53,24 +65,5 @@ public class MessageService {
             }
         );
     }
-
-    /**
-     * Sends a raw Flow response (interactive payload) that was constructed by FlowService.
-     *
-     * @param to           The recipient’s phone number (in international format, no “+”).
-     * @param responseBody A Map that already contains all required keys:
-     *                     {
-     *                       "messaging_product": "whatsapp",
-     *                       "to": "<USER_NUMBER>",
-     *                       "type": "interactive",
-     *                       "interactive": { … }
-     *                     }
-     */
-    public Mono<Void> sendRawFlowMessage(String to, Map<String, Object> responseBody) {
-        // Ensure the "to" field is present (some callers include it, but double‐check)
-        responseBody.put("to", to);
-        return apiClient.sendRawMessage(responseBody);
-    }
-
 
 }

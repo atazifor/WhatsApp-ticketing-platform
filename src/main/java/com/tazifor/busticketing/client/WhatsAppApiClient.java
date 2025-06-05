@@ -109,18 +109,21 @@ public class WhatsAppApiClient {
     // 3) Send an interactive “Flow” message
     // This tells WhatsApp to open a Flow UI on the user’s phone.
     // ---------------------------------------------
-    public Mono<Void> sendFlowMessage(String to,
+    public Mono<Void> sendFlowMessage(String messageBody,
+                                        String flowCta, //flow call to action
+                                        String to,
                                       String flowId,
                                       Map<String, Object> flowActionPayload) {
         // flowActionPayload may be empty or contain “data” for the first screen
+
         Map<String, Object> interactive = Map.<String, Object>of(
             "type", "flow",
-            "body", Map.of("text", "Let me guide you to book your ticket!"), // optional prompt text
+            "body", Map.of("text", messageBody), // optional prompt text
             "action", Map.of(
                 "name", "flow",
                 "parameters", Map.of(
                     "flow_message_version", "3",
-                    "flow_cta", "Begin!",
+                    "flow_cta", flowCta,
                     "flow_id", flowId,
                     "flow_token", flowActionPayload.getOrDefault("flow_token", generateRandomToken()),
                     "flow_action", "data_exchange" //get data from endpoint url
@@ -132,12 +135,12 @@ public class WhatsAppApiClient {
         if (flowActionPayload.containsKey("data")) {
             interactive = Map.of(
                 "type", "flow",
-                "body", Map.of("text", "Let me guide you to book your ticket!"),
+                "body", Map.of("text", messageBody),
                 "action", Map.of(
                     "name", "flow",
                     "parameters", Map.<String, Object>of(
                         "flow_message_version", "3",
-                        "flow_cta", "Begin!",
+                        "flow_cta", flowCta,
                         "flow_id", flowId,
                         "flow_token", flowActionPayload.getOrDefault("flow_token", generateRandomToken()),
                         "flow_action_payload", Map.of("data", flowActionPayload.get("data"))

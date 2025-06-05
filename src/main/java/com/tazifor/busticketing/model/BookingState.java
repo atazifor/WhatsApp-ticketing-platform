@@ -10,6 +10,8 @@ import java.util.Collection;
 @Data
 public class BookingState {
     private String step;
+    private Collection<String> selectedOption;
+    private String origin;
     private String destination;
     private String date;
     private String time;
