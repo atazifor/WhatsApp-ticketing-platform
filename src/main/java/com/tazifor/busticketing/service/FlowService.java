@@ -4,7 +4,6 @@ package com.tazifor.busticketing.service;
 import com.tazifor.busticketing.client.WhatsAppApiClient;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.FlowResponsePayload;
-import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.FinalScreenResponsePayload;
 import com.tazifor.busticketing.dto.crypto.FlowEncryptedPayload;
 import com.tazifor.busticketing.model.BookingState;
@@ -80,10 +79,10 @@ public class FlowService {
             switch (action) {
                 case "INIT":
                     logger.info("INIT for token {}", decryptedRequestPayload.getFlow_token());
-                    ui = buildInitialScreen(state);
+                    ui = Screen.buildInitialScreen(state);
                     break;
                 case "BACK":
-                    ui = showBackScreen(state);
+                    ui = Screen.showBackScreen(state);
                     break;
                 case "data_exchange":
                     // Look up enum by req.getScreen() and invoke its handle(...)
@@ -132,12 +131,8 @@ public class FlowService {
         String overlaidBase64 = imageOverlayUtil.createImageWithHighlights(chosenSeats);
 
         // Send a simple text confirmation (you could also send a template)
-        String confirmationText = "✅ Booking confirmed! Details: \n" + formatParams(finalParams);
-        /*apiClient.sendText(from, confirmationText)
-                .subscribe(
-                        __ -> logger.info("Sent completion message to {}", from),
-                        err -> logger.error("Error sending completion message to {}: {}", from, err.getMessage())
-                );*/
+        String confirmationText = "✅ Booking confirmed! Details: \n" + Screen.formatParams(finalParams);
+
         apiClient.sendImage(from, overlaidBase64, confirmationText)
             .subscribe(
                 __ -> logger.info("Sent final ticket image to {}", from),
@@ -152,6 +147,8 @@ public class FlowService {
         state.setStep(payload.getScreen());
         if (payload.getData() != null) {
             Map<String,Object> data = payload.getData();
+            if (data.containsKey("selected_option")) state.setSelectedOption((Collection<String>)data.get("selected_option"));
+            if (data.containsKey("origin")) state.setOrigin(data.get("origin").toString());
             if (data.containsKey("destination")) state.setDestination(data.get("destination").toString());
             if (data.containsKey("date"))        state.setDate(data.get("date").toString());
             if (data.containsKey("time"))        state.setTime(data.get("time").toString());
@@ -163,57 +160,6 @@ public class FlowService {
             if (data.containsKey("more_details"))state.setMoreDetails(data.get("more_details").toString());
         }
         return state;
-    }
-
-    /** Builds the very first screen of an encrypted flow. */
-    private NextScreenResponsePayload buildInitialScreen(BookingState state) {
-
-        state.setStep("CHOOSE_DESTINATION");
-
-        Object[] destinations = {
-            Map.of("id", "new_york", "title", "New York"),
-            Map.of("id", "boston", "title", "Boston"),
-            Map.of("id", "washington", "title", "Washington DC"),
-            Map.of("id", "philadelphia", "title", "Philadelphia")
-        };
-
-        return new NextScreenResponsePayload(
-            "CHOOSE_DESTINATION",
-            Map.of("destinations", destinations)
-        );
-    }
-
-    /** Handles “Back” by re‐showing the previous screen (stubbed as re‐initializing). */
-    private NextScreenResponsePayload showBackScreen(BookingState state) {
-        return buildInitialScreen(state);
-    }
-
-    /**
-     * Formats finalParams (excluding flow_token) into a user‐friendly string, e.g. "date=2025-05-31 destination=New York".
-     */
-    private String formatParams(Map<String, Object> summaryData) {
-        Object seatObj = summaryData.get("seat");
-        String seatDisplay;
-
-        if (seatObj == null) {
-            seatDisplay = "Not selected";
-        } else if (seatObj instanceof Collection<?>) {
-            Collection<?> seats = (Collection<?>) seatObj;
-            seatDisplay = seats.isEmpty() ? "Not selected" :
-                seats.size() == 1 ? seats.iterator().next().toString() :
-                    String.join(", ", seats.stream().map(Object::toString).toList());
-        } else {
-            seatDisplay = seatObj.toString();
-        }
-        return "🎫 *Your Ticket Confirmation* 🎫\n\n" +
-            "*Name:* " + summaryData.get("full_name") + "\n" +
-            "*Email:* " + summaryData.get("email") + "\n" +
-            "*Phone:* " + summaryData.get("phone") + "\n\n" +
-            "*Destination:* " + summaryData.get("destination") + "\n" +
-            "*Date:* " + summaryData.get("date") + "\n" +
-            "*Time:* " + summaryData.get("time") + "\n" +
-            "*💺 Seat(s):* "         + seatDisplay        + "\n" +
-            "*Number of Tickets:* " + summaryData.get("num_tickets") + "\n\n";
     }
 }
 
