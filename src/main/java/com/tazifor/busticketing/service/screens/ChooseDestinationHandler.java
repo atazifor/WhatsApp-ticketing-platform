@@ -8,30 +8,42 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 import static com.tazifor.busticketing.service.Screen.STEP_CHOOSE_DATE;
+import static org.springframework.util.StringUtils.capitalize;
 
 @Component("CHOOSE_DESTINATION")
-public class ChooseDestinationHandler implements ScreenHandler{
+public class ChooseDestinationHandler implements ScreenHandler {
     private final static Logger logger = LoggerFactory.getLogger(ChooseDestinationHandler.class);
 
-    @Override
-    public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload,
-                                                  BookingState state) {
-        String destination = payload.getData().get("destination").toString();
-        state.setDestination(destination);
-        state.setStep(STEP_CHOOSE_DATE); //next screen
+    public static final int BOOKING_WINDOW_DAYS = 15;
 
-        List<Map<String, String>> dates = List.of(
-            Map.of("id", "2025-06-10", "title", "Tue Jun 10 2025"),
-            Map.of("id", "2025-06-11", "title", "Wed Jun 11 2025"),
-            Map.of("id", "2025-06-12", "title", "Thu Jun 12 2025")
-        );
+    @Override
+    public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload, BookingState state) {
+        String origin = payload.getData().get("origin").toString();
+        String destination = payload.getData().get("destination").toString();
+        logger.info("origin {}, destination {}", origin, destination);
+
+
+        state.setOrigin(origin);
+        state.setDestination(destination);
+        state.setStep(STEP_CHOOSE_DATE);
+
+        String introText = "You're traveling from **" + capitalize(origin) + "** to **" + capitalize(destination) + "**. \n" +
+            "When would you like to travel?";
+
+        LocalDate today = LocalDate.now();
+        LocalDate maxDate = today.plusDays(BOOKING_WINDOW_DAYS);
+
         return new NextScreenResponsePayload(STEP_CHOOSE_DATE, Map.of(
+            "origin", origin,
             "destination", destination,
-            "dates", dates
+            "today", today.toString(),
+            "max_date", maxDate.toString(),
+            "date_intro", introText
         ));
     }
 }
