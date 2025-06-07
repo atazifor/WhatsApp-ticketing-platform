@@ -13,6 +13,8 @@ public class Screen {
     public static final String STEP_CHOOSE_SEAT = "CHOOSE_SEAT";
     public static final String STEP_CHOOSE_DATE = "CHOOSE_DATE";
     public static final String STEP_CHOOSE_TIME = "CHOOSE_TIME";
+    public static final String STEP_SELECT_FILTERS = "SELECT_FILTERS";
+    public static final String STEP_DISPLAY_RESULTS = "DISPLAY_RESULTS";
     public static final String STEP_PASSENGER_INFORMATION = "PASSENGER_INFO";
     public static final String STEP_SUMMARY = "SUMMARY";
 
@@ -48,7 +50,7 @@ public class Screen {
     /**
      * Formats finalParams (excluding flow_token) into a user‐friendly string, e.g. "date=2025-05-31 destination=New York".
      */
-    public static String formatParams(Map<String, Object> summaryData) {
+    public static String formatSummaryDataForFinalImageMessageCaption(Map<String, Object> summaryData) {
         Object seatObj = summaryData.get("seat");
         String seatDisplay;
 
@@ -62,15 +64,38 @@ public class Screen {
         } else {
             seatDisplay = seatObj.toString();
         }
-        return "🎫 *Your Ticket Confirmation* 🎫\n\n" +
-            "*Name:* " + summaryData.get("full_name") + "\n" +
-            "*Email:* " + summaryData.get("email") + "\n" +
-            "*Phone:* " + summaryData.get("phone") + "\n\n" +
-            "*Destination:* " + summaryData.get("destination") + "\n" +
-            "*Date:* " + summaryData.get("date") + "\n" +
-            "*Time:* " + summaryData.get("time") + "\n" +
-            "*💺 Seat(s):* "         + seatDisplay        + "\n" +
-            "*Number of Tickets:* " + summaryData.get("num_tickets") + "\n\n";
+
+        return """
+            🎟️ E-Ticket Confirmation
+            --------------------------
+            👤 Passenger:  %s
+            📧 Email:      %s
+            📱 Phone:      %s
+            
+            🚍 Agency:     %s
+            💺 Class:      %s
+            🛣️ From → To:  %s → %s
+            📅 Date:       %s
+            ⏰ Time:       %s
+            🎫 Seat(s):    %s
+            🔢 Tickets:    %s
+            --------------------------
+            📍 Please arrive 15 minutes early
+            ✅ Safe travels with us!
+            """.formatted(
+            summaryData.get("full_name"),
+            summaryData.get("email"),
+            summaryData.get("phone"),
+            summaryData.get("agency"),
+            summaryData.get("class"),
+            summaryData.get("origin"),
+            summaryData.get("destination"),
+            summaryData.get("date"),
+            summaryData.get("time"),
+            seatDisplay,
+            summaryData.get("num_tickets")
+        );
+
     }
 
     public static String formatAppointment(BookingState state) {
@@ -105,13 +130,15 @@ public class Screen {
             seatDisplay = seatObj.toString();
         }
 
-        return "*🗓 Appointment:* " + summaryData.get("appointment") + "\n" +
-            "*📝 Details:* "     + summaryData.get("details")     + "\n\n" +
-            "*📍 Destination:* " + summaryData.get("destination") + "\n" +
-            "*📅 Date:* "        + summaryData.get("date")        + "\n" +
-            "*⏰ Time:* "        + summaryData.get("time")        + "\n" +
-            "*💺 Seat(s):* "         + seatDisplay        + "\n" +
-            "*🎟 Tickets:* "     + summaryData.get("num_tickets") + "\n\n" +
+        return "**Appointment:** " + summaryData.get("appointment") + "\n" +
+            "**Details:** "     + summaryData.get("details")     + "\n\n" +
+            "**Agency:** "      + summaryData.getOrDefault("agency", "N/A") + "\n" +
+            "**Class:** "       + summaryData.getOrDefault("class", "N/A") + "\n" +
+            "**Destination:** " + summaryData.get("destination") + "\n" +
+            "**Date:** "        + summaryData.get("date")        + "\n" +
+            "**Time:** "        + summaryData.get("time")        + "\n" +
+            "**Seat(s):** "     + seatDisplay                    + "\n" +
+            "**Tickets:** "     + summaryData.get("num_tickets") + "\n\n" +
             "_Any additional info:_ " + summaryData.get("more_details");
     }
 

@@ -28,7 +28,7 @@ public class ChooseOriginHandler implements ScreenHandler {
             .map(city -> Map.of("id", city, "title", capitalize(city)))
             .toList();
 
-        String introText = "You're traveling from *" + capitalize(origin) + "*. Great choice! \n" +
+        String introText = "You're traveling from **" + capitalize(origin) + "**. Great choice! \n" +
             "Now choose your destination";
 
         return new NextScreenResponsePayload(STEP_CHOOSE_DESTINATION, Map.of(

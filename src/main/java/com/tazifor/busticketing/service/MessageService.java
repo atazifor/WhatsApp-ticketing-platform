@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
@@ -36,7 +35,7 @@ public class MessageService {
             },
             () -> {
                 // No template chosen. Check for "Book Ticket" or fallback.
-                if (messageText.contains("book")) {
+                if (messageText.toLowerCase().contains("book")) {
                     logger.info("Initiating Ticketing Flow for user {}", from);
 
                     String richTextBody = "🚌 *Welcome to SpidTix!*\n\n"

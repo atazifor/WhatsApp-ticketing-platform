@@ -37,9 +37,12 @@ public class SummaryScreenHandler implements ScreenHandler {
 
         // Otherwise, finalize booking
         Map<String, Object> finalParams = new LinkedHashMap<>();
+        finalParams.put("origin",  state.getOrigin());
         finalParams.put("destination",  state.getDestination());
         finalParams.put("date",         state.getDate());
         finalParams.put("time",         state.getTime());
+        finalParams.put("class",         state.getTravelClass());
+        finalParams.put("agency",         state.getAgency());
         finalParams.put("seat",          state.getChosenSeats());
         finalParams.put("full_name",    state.getFullName());
         finalParams.put("email",        state.getEmail());

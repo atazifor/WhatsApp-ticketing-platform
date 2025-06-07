@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
@@ -87,7 +88,13 @@ public class FlowService {
                 case "data_exchange":
                     // Look up enum by req.getScreen() and invoke its handle(...)
                     String currentScreen = decryptedRequestPayload.getScreen();
-                    logger.info("data_exchange for screen {} with payload {}", currentScreen, decryptedRequestPayload);
+                    logger.info("data_exchange for screen {}", currentScreen);
+
+                    if(StringUtils.hasLength(currentScreen) || !screenHandlers.containsKey(currentScreen)){
+                        if (decryptedRequestPayload.getData().containsKey("error")) {
+                            screenHandlers.get("GENERIC_ERROR");
+                        }
+                    }
                     ScreenHandler screenHandler = screenHandlers.get(currentScreen);
                     ui = screenHandler.handleDataExchange(decryptedRequestPayload, state);
                     break;
@@ -105,7 +112,7 @@ public class FlowService {
 
             // 7) Serialize and re‐encrypt the new state
             String uiAsString = objectMapper.writeValueAsString(ui);
-            logger.info("UI data {}", uiAsString);
+            logger.debug("UI data {}", uiAsString);
             return encryptionService.encryptPayload(uiAsString, dr.aesKey(), dr.iv());
 
         });
@@ -131,7 +138,7 @@ public class FlowService {
         String overlaidBase64 = imageOverlayUtil.createImageWithHighlights(chosenSeats);
 
         // Send a simple text confirmation (you could also send a template)
-        String confirmationText = "✅ Booking confirmed! Details: \n" + Screen.formatParams(finalParams);
+        String confirmationText = "✅ Booking confirmed! Details: \n" + Screen.formatSummaryDataForFinalImageMessageCaption(finalParams);
 
         apiClient.sendImage(from, overlaidBase64, confirmationText)
             .subscribe(
@@ -152,6 +159,10 @@ public class FlowService {
             if (data.containsKey("destination")) state.setDestination(data.get("destination").toString());
             if (data.containsKey("date"))        state.setDate(data.get("date").toString());
             if (data.containsKey("time"))        state.setTime(data.get("time").toString());
+            if (data.containsKey("selectedClasses"))        state.setSelectedClasses((List<String>)data.get("selectedClasses"));
+            if (data.containsKey("selectedAgencies"))        state.setSelectedAgencies((List<String>) data.get("selectedAgencies"));
+            if (data.containsKey("class"))        state.setTravelClass(data.get("class").toString());
+            if (data.containsKey("agency"))        state.setAgency(data.get("agency").toString());
             if (data.containsKey("seat"))        state.setChosenSeats((Collection<String>) data.get("seat"));
             if (data.containsKey("full_name"))   state.setFullName(data.get("full_name").toString());
             if (data.containsKey("email"))       state.setEmail(data.get("email").toString());

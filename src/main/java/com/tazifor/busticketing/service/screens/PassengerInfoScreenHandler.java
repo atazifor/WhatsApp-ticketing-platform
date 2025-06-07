@@ -20,11 +20,13 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
     @Override
     public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
-        String fullName   = payload.getData().get("full_name").toString();
-        String email      = payload.getData().get("email").toString();
-        String phone      = payload.getData().get("phone").toString();
-        String numTickets = payload.getData().get("num_tickets").toString();
-        String moreDetails= payload.getData().getOrDefault("more_details", "").toString();
+        Map<String, Object> data = payload.getData();
+
+        String fullName   = data.get("full_name").toString();
+        String email      = data.get("email").toString();
+        String phone      = data.get("phone").toString();
+        String numTickets = data.get("num_tickets").toString();
+        String moreDetails= data.getOrDefault("more_details", "").toString();
 
         // Update state
         state.setFullName(fullName);
@@ -32,13 +34,22 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
         state.setPhone(phone);
         state.setNumTickets(numTickets);
         state.setMoreDetails(moreDetails);
+
+        // Defensive in case they weren’t yet set in state
+        if (data.containsKey("origin")) state.setOrigin(data.get("origin").toString());
+        if (data.containsKey("agency")) state.setAgency(data.get("agency").toString());
+        if (data.containsKey("class")) state.setTravelClass(data.get("class").toString());
+
         state.setStep(STEP_SUMMARY);
 
         // Build SUMMARY screen data
         Map<String, Object> summaryData = new LinkedHashMap<>();
         summaryData.put("appointment",   formatAppointment(state));
         summaryData.put("details",       formatDetails(state));
+        summaryData.put("origin",   state.getOrigin());
         summaryData.put("destination",   state.getDestination());
+        summaryData.put("agency",   state.getAgency());
+        summaryData.put("class",   state.getTravelClass());
         summaryData.put("date",          state.getDate());
         summaryData.put("time",          state.getTime());
         summaryData.put("seat",          state.getChosenSeats());
