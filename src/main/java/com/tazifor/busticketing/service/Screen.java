@@ -1,6 +1,7 @@
 package com.tazifor.busticketing.service;
 
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
+import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
 
 import java.util.*;
@@ -20,10 +21,8 @@ public class Screen {
 
 
     /** Builds the very first screen of an encrypted flow. */
-    public static NextScreenResponsePayload buildInitialScreen(BookingState state) {
-
-        state.setStep(STEP_WELCOME);
-
+    public static ScreenHandlerResult buildInitialScreen(BookingState state) {
+        BookingState newState = state.withStep(STEP_WELCOME);
         Object[] options = {
             Map.of("id", "book_ticket",
                 "title", "🎟️ Book Ticket",
@@ -36,14 +35,15 @@ public class Screen {
                 "enabled", false)
         };
 
-        return new NextScreenResponsePayload(
+        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(
             STEP_WELCOME,
             Map.of("options", options)
         );
+        return new ScreenHandlerResult(newState, nextScreenResponsePayload);
     }
 
     /** Handles “Back” by re‐showing the previous screen (stubbed as re‐initializing). */
-    public static NextScreenResponsePayload showBackScreen(BookingState state) {
+    public static ScreenHandlerResult showBackScreen(BookingState state) {
         return buildInitialScreen(state);
     }
 
@@ -140,6 +140,14 @@ public class Screen {
             "**Seat(s):** "     + seatDisplay                    + "\n" +
             "**Tickets:** "     + summaryData.get("num_tickets") + "\n\n" +
             "_Any additional info:_ " + summaryData.get("more_details");
+    }
+
+    public static List<String> extractList(Object raw) {
+        if (raw == null) return List.of();
+        if (raw instanceof List<?> list) {
+            return list.stream().map(Object::toString).toList();
+        }
+        return List.of(raw.toString());
     }
 
 }

@@ -1,8 +1,8 @@
 package com.tazifor.busticketing.service.screens;
 
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
-import com.tazifor.busticketing.dto.FlowResponsePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
+import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
     private final static Logger logger = LoggerFactory.getLogger(SummaryScreenHandler.class);
 
     @Override
-    public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload,
+    public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
         Map<String, Object> data = payload.getData();
 
@@ -29,18 +29,17 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
         String moreDetails= data.getOrDefault("more_details", "").toString();
 
         // Update state
-        state.setFullName(fullName);
-        state.setEmail(email);
-        state.setPhone(phone);
-        state.setNumTickets(numTickets);
-        state.setMoreDetails(moreDetails);
+        BookingState newState = state.withFullName(fullName).withEmail(email)
+            .withPhone(phone)
+            .withNumTickets(numTickets)
+            .withMoreDetails(moreDetails);
 
         // Defensive in case they weren’t yet set in state
-        if (data.containsKey("origin")) state.setOrigin(data.get("origin").toString());
-        if (data.containsKey("agency")) state.setAgency(data.get("agency").toString());
-        if (data.containsKey("class")) state.setTravelClass(data.get("class").toString());
+        //if (data.containsKey("origin")) state.setOrigin(data.get("origin").toString());
+        //if (data.containsKey("agency")) state.setAgency(data.get("agency").toString());
+        //if (data.containsKey("class")) state.setTravelClass(data.get("class").toString());
 
-        state.setStep(STEP_SUMMARY);
+        newState = state.withStep(STEP_SUMMARY);
 
         // Build SUMMARY screen data
         Map<String, Object> summaryData = new LinkedHashMap<>();
@@ -60,7 +59,8 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
         summaryData.put("more_details",  moreDetails);
         summaryData.put("summary_text",  buildSummaryText(summaryData));
 
-        return new NextScreenResponsePayload(STEP_SUMMARY, summaryData);
+        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_SUMMARY, summaryData);
+        return new ScreenHandlerResult(newState, nextScreenResponsePayload);
 
     }
 }

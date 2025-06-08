@@ -1,8 +1,8 @@
 package com.tazifor.busticketing.service.screens;
 
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
-import com.tazifor.busticketing.dto.FlowResponsePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
+import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,15 +17,12 @@ import static com.tazifor.busticketing.service.Screen.STEP_CHOOSE_TIME;
 public class ChooseDateHandler implements ScreenHandler{
     private final static Logger logger = LoggerFactory.getLogger(ChooseDateHandler.class);
 
-
     @Override
-    public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload,
+    public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
-        logger.info("ChooseDateHandler.handleDataExchange state" + state);
-
         String date = payload.getData().get("date").toString();
-        state.setDate(date);
-        state.setStep(STEP_CHOOSE_TIME);
+        BookingState newState = state.withDate(date)
+            .withStep(STEP_CHOOSE_TIME);
 
         // Grouped times by bucket
         List<Map<String, String>> morningSlots = List.of(
@@ -44,16 +41,17 @@ public class ChooseDateHandler implements ScreenHandler{
             Map.of("id", "20:30", "title", "08:30 PM")
         );
 
-        return new NextScreenResponsePayload(STEP_CHOOSE_TIME, Map.of(
+        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_CHOOSE_TIME, Map.of(
             "origin", state.getOrigin(),
             "destination", state.getDestination(),
             "date", date,
             "morning_slots", morningSlots,
             "afternoon_slots", afternoonSlots,
             "evening_slots", eveningSlots,
-            "time_slots", List.of(),       // Initially empty until user selects
-            "slot_enabled", false,
-            "is_required", false
+            "selected_morning_times", List.of(), // Initially empty until user selects
+            "selected_afternoon_times", List.of(),
+            "selected_evening_times", List.of()
         ));
+        return new ScreenHandlerResult(newState, nextScreenResponsePayload);
     }
 }

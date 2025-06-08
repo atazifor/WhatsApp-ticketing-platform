@@ -1,10 +1,9 @@
 package com.tazifor.busticketing.service.screens;
 
-import com.tazifor.busticketing.dto.FinalScreenResponsePayload;
-import com.tazifor.busticketing.dto.FlowDataExchangePayload;
-import com.tazifor.busticketing.dto.FlowResponsePayload;
-import com.tazifor.busticketing.dto.NextScreenResponsePayload;
+import com.tazifor.busticketing.ScheduleRepository;
+import com.tazifor.busticketing.dto.*;
 import com.tazifor.busticketing.model.BookingState;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -14,37 +13,45 @@ import java.util.List;
 import java.util.Map;
 
 import static com.tazifor.busticketing.service.Screen.STEP_CHOOSE_ORIGIN;
+import static org.springframework.util.StringUtils.capitalize;
 
 @Component("WELCOME_SCREEN")
+@RequiredArgsConstructor
 public class WelcomeScreenHandler implements ScreenHandler {
+
+    private final ScheduleRepository scheduleRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(WelcomeScreenHandler.class);
 
     @Override
-    public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload,
+    public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
-        logger.info("WelcomeScreenHandler.handleDataExchange" + payload);
         Object selectedOption = payload.getData().get("selected_option");
         String option = "unsure";
         if (selectedOption instanceof Collection<?>) {
             Collection<?> options = (Collection<?>) selectedOption;
             option = options.iterator().next().toString();
         }
-        state.setStep(option); // Track user's initial choice
-
+        FlowResponsePayload flowResponsePayload;
+        BookingState newState;
         switch (option) {
             case "book_ticket":
                 // proceed to choose destination screen
-                state.setStep(STEP_CHOOSE_ORIGIN);
-                return buildChooseOriginScreen();
+                newState = state.withStep(STEP_CHOOSE_ORIGIN);
+                flowResponsePayload = buildChooseOriginScreen();
+                return new ScreenHandlerResult(newState, flowResponsePayload);
 
             case "faq":
                 // later implement FAQ
-                return buildFaqScreen(payload.getFlow_token());
+                newState = state.withStep("faq_start");
+                flowResponsePayload = buildFaqScreen(payload.getFlow_token());
+                return new ScreenHandlerResult(newState, flowResponsePayload);
 
             case "support":
                 // later implement Support
-                return buildSupportScreen(payload.getFlow_token());
+                newState = state.withStep("support");
+                flowResponsePayload  = buildSupportScreen(payload.getFlow_token());
+                return new ScreenHandlerResult(newState, flowResponsePayload);
 
             default:
                 throw new IllegalArgumentException("Unknown option: " + selectedOption);
@@ -52,12 +59,9 @@ public class WelcomeScreenHandler implements ScreenHandler {
     }
 
     private FlowResponsePayload buildChooseOriginScreen() {
-        List<Map<String, String>> cities = List.of(
-            Map.of("id", "yaounde", "title", "Yaounde"),
-            Map.of("id", "douala", "title", "Douala"),
-            Map.of("id", "buea", "title", "Buea"),
-            Map.of("id", "bamenda", "title", "Bamenda")
-        );
+        List<Map<String, String>> cities = scheduleRepository.getAvailableCities().stream()
+            .map(city -> Map.of("id", city, "title", capitalize(city)))
+            .toList();
 
         return new NextScreenResponsePayload("CHOOSE_ORIGIN", Map.of(
             "origins", cities

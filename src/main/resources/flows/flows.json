@@ -231,11 +231,15 @@
 
     {
       "id": "CHOOSE_TIME",
-      "title": "🕒 Choose Departure Time",
+      "title": "🕒 Departure Time",
       "data": {
         "origin": { "type": "string", "__example__": "yaounde" },
         "destination": { "type": "string", "__example__": "douala" },
         "date": { "type": "string", "__example__": "2025-06-06" },
+
+        "is_morning_selected": { "type": "boolean", "__example__": false },
+        "is_afternoon_selected": { "type": "boolean", "__example__": false },
+        "is_evening_selected": { "type": "boolean", "__example__": false },
 
         "morning_slots": {
           "type": "array",
@@ -278,25 +282,6 @@
             { "id": "18:00", "title": "06:00 PM" },
             { "id": "20:00", "title": "08:00 PM" }
           ]
-        },
-        "time_slots": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": { "type": "string" },
-              "title": { "type": "string" }
-            }
-          },
-          "__example__": []
-        },
-        "slot_enabled": {
-          "type": "boolean",
-          "__example__": false
-        },
-        "is_required": {
-          "type": "boolean",
-          "__example__": false
         }
       },
       "layout": {
@@ -304,67 +289,92 @@
         "children": [
           {
             "type": "TextBody",
-            "text": "Choose a time of day to see available departure slots."
+            "text": "Pick time periods and specific hours. All optional."
           },
           {
-            "type": "RadioButtonsGroup",
+            "type": "ChipsSelector",
+            "name": "selected_periods",
             "label": "Time of Day",
-            "name": "time_of_day",
             "data-source": [
               {
                 "id": "morning",
-                "title": "🌅 Morning (4am–11am)",
+                "title": "🌅 Morning",
+                "enabled": true,
                 "on-select-action": {
                   "name": "update_data",
-                  "payload": {
-                    "time_slots": "${data.morning_slots}",
-                    "slot_enabled": true,
-                    "is_required": true
-                  }
+                  "payload": { "is_morning_selected": true }
                 },
                 "on-unselect-action": {
                   "name": "update_data",
-                  "payload": {
-
-                    "slot_enabled": false,
-                    "is_required": false
-                  }
+                  "payload": { "is_morning_selected": false }
                 }
               },
               {
                 "id": "afternoon",
-                "title": "🌤 Afternoon (12pm–5pm)",
+                "title": "🌤 Afternoon",
+                "enabled": true,
                 "on-select-action": {
                   "name": "update_data",
-                  "payload": {
-                    "time_slots": "${data.afternoon_slots}",
-                    "slot_enabled": true,
-                    "is_required": true
-                  }
+                  "payload": { "is_afternoon_selected": true }
+                },
+                "on-unselect-action": {
+                  "name": "update_data",
+                  "payload": { "is_afternoon_selected": false }
                 }
               },
               {
                 "id": "evening",
-                "title": "🌙 Evening (6pm–9pm)",
+                "title": "🌙 Evening",
+                "enabled": true,
                 "on-select-action": {
                   "name": "update_data",
-                  "payload": {
-                    "time_slots": "${data.evening_slots}",
-                    "slot_enabled": true,
-                    "is_required": true
-                  }
+                  "payload": { "is_evening_selected": true }
+                },
+                "on-unselect-action": {
+                  "name": "update_data",
+                  "payload": { "is_evening_selected": false }
                 }
               }
             ]
           },
+
           {
-            "type": "RadioButtonsGroup",
-            "label": "Available Time Slots",
-            "name": "selected_time",
-            "data-source": "${data.time_slots}",
-            "enabled": "${data.slot_enabled}",
-            "required": "${data.is_required}"
+            "type": "If",
+            "condition": "${data.is_morning_selected}",
+            "then": [
+              {
+                "type": "CheckboxGroup",
+                "name": "selected_morning_times",
+                "label": "🌅 Morning Times",
+                "data-source": "${data.morning_slots}"
+              }
+            ]
           },
+          {
+            "type": "If",
+            "condition": "${data.is_afternoon_selected}",
+            "then": [
+              {
+                "type": "CheckboxGroup",
+                "name": "selected_afternoon_times",
+                "label": "🌤 Afternoon Times",
+                "data-source": "${data.afternoon_slots}"
+              }
+            ]
+          },
+          {
+            "type": "If",
+            "condition": "${data.is_evening_selected}",
+            "then": [
+              {
+                "type": "CheckboxGroup",
+                "name": "selected_evening_times",
+                "label": "🌙 Evening Times",
+                "data-source": "${data.evening_slots}"
+              }
+            ]
+          },
+
           {
             "type": "Footer",
             "label": "Continue →",
@@ -375,7 +385,9 @@
                 "origin": "${data.origin}",
                 "destination": "${data.destination}",
                 "date": "${data.date}",
-                "time": "${form.selected_time}"
+                "selected_morning_times": "${form.selected_morning_times}",
+                "selected_afternoon_times": "${form.selected_afternoon_times}",
+                "selected_evening_times": "${form.selected_evening_times}"
               }
             }
           }
@@ -427,6 +439,11 @@
           "items": { "type": "string" },
           "__example__": []
         },
+        "selected_times": {
+          "type": "array",
+          "items": { "type": "string" },
+          "__example__": []
+        },
         "selected_agencies": {
           "type": "array",
           "items": { "type": "string" },
@@ -469,6 +486,7 @@
                 "destination": "${data.destination}",
                 "date": "${data.date}",
                 "time": "${data.time}",
+                "selected_times": "${data.selected_times}",
                 "selected_classes": "${form.selected_classes}",
                 "selected_agencies": "${form.selected_agencies}"
               }
@@ -615,6 +633,7 @@
                 "destination": "${data.destination}",
                 "date": "${data.date}",
                 "time": "${data.time}",
+                "selected_times": "${data.selected_times}",
                 "selected_classes": "${data.selected_classes}",
                 "selected_agencies": "${data.selected_agencies}"
               }

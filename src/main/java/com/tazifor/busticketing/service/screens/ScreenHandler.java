@@ -2,6 +2,7 @@ package com.tazifor.busticketing.service.screens;
 
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.FlowResponsePayload;
+import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
 
 /**
@@ -12,7 +13,7 @@ public interface ScreenHandler {
     /**
      * @param requestPayload  the decrypted payload from WhatsApp (including "screen", "data", "flow_token")
      * @param state           the mutable BookingState so far
-     * @return a FlowResponsePayload (either NextScreenResponsePayload or FinalScreenResponsePayload)
+     * @return a ScreenHandlerResult (has newState and either NextScreenResponsePayload or FinalScreenResponsePayload)
      */
-    FlowResponsePayload handleDataExchange(FlowDataExchangePayload requestPayload, BookingState state);
+    ScreenHandlerResult handleDataExchange(FlowDataExchangePayload requestPayload, BookingState state);
 }

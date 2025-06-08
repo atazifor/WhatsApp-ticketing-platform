@@ -1,9 +1,6 @@
 package com.tazifor.busticketing.service.screens;
 
-import com.tazifor.busticketing.dto.FinalScreenResponsePayload;
-import com.tazifor.busticketing.dto.FlowDataExchangePayload;
-import com.tazifor.busticketing.dto.FlowResponsePayload;
-import com.tazifor.busticketing.dto.NextScreenResponsePayload;
+import com.tazifor.busticketing.dto.*;
 import com.tazifor.busticketing.model.BookingState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +16,7 @@ public class SummaryScreenHandler implements ScreenHandler {
     private final static Logger logger = LoggerFactory.getLogger(SummaryScreenHandler.class);
 
     @Override
-    public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload,
+    public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
         // Check if the user agreed to terms
         boolean agreed = Boolean.parseBoolean(
@@ -32,7 +29,7 @@ public class SummaryScreenHandler implements ScreenHandler {
             errorData.put("appointment",    formatAppointment(state));
             errorData.put("details",        formatDetails(state));
             errorData.put("error_message",  "❗ You must agree to the terms to proceed.");
-            return new NextScreenResponsePayload(STEP_SUMMARY, errorData);
+            return new ScreenHandlerResult(state.withStep(STEP_SUMMARY), new NextScreenResponsePayload(STEP_SUMMARY, errorData));
         }
 
         // Otherwise, finalize booking
@@ -52,6 +49,7 @@ public class SummaryScreenHandler implements ScreenHandler {
         finalParams.put("flow_token",   payload.getFlow_token());
 
         var extMsgResponse = new FinalScreenResponsePayload.ExtensionMessageResponse(finalParams);
-        return new FinalScreenResponsePayload(extMsgResponse);
+        FinalScreenResponsePayload finalScreenResponsePayload = new FinalScreenResponsePayload(extMsgResponse);
+        return new ScreenHandlerResult(state.withStep("END"), finalScreenResponsePayload);
     }
 }

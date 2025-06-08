@@ -3,6 +3,7 @@ package com.tazifor.busticketing.service.screens;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.FlowResponsePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
+import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
 import com.tazifor.busticketing.service.BusLayoutService;
 import com.tazifor.busticketing.util.BeanUtil;
@@ -22,13 +23,13 @@ import static com.tazifor.busticketing.service.Screen.STEP_CHOOSE_SEAT;
 public class DisplayResultsHandler implements ScreenHandler {
     private final static Logger LOGGER = LoggerFactory.getLogger(DisplayResultsHandler.class);
     @Override
-    public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload,
+    public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
 
         LOGGER.info("DisplayResultsHandler.handleDataExchange for payload {}", payload);
 
         // 2) Advance our state machine to CHOOSE_SEAT
-        state.setStep(STEP_CHOOSE_SEAT);
+        BookingState newState = state.withStep(STEP_CHOOSE_SEAT);
 
         // 3) Fetch the cached bus image + seat coordinates from BusLayoutService
         BusLayoutService layoutService = BeanUtil.getBean(BusLayoutService.class);
@@ -40,7 +41,7 @@ public class DisplayResultsHandler implements ScreenHandler {
             Map<String,Object> err = Map.of(
                 "error_message", "🚧 Unable to load seat map right now."
             );
-            return new NextScreenResponsePayload(STEP_CHOOSE_SEAT, err);
+            return new ScreenHandlerResult(newState, new NextScreenResponsePayload(STEP_CHOOSE_SEAT, err));
         }
 
         // 4) Build the “seats” list dynamically from seatCoords.keySet()
@@ -72,6 +73,7 @@ public class DisplayResultsHandler implements ScreenHandler {
 
 
         // 5) Return payload whose `data` matches your JSON layout’s placeholders
-        return new NextScreenResponsePayload(STEP_CHOOSE_SEAT, data);
+        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_CHOOSE_SEAT, data);
+        return new ScreenHandlerResult(newState, nextScreenResponsePayload);
     }
 }

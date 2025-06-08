@@ -3,6 +3,7 @@ package com.tazifor.busticketing.service.screens;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.FlowResponsePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
+import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,15 +23,13 @@ public class ChooseDestinationHandler implements ScreenHandler {
     public static final int BOOKING_WINDOW_DAYS = 15;
 
     @Override
-    public FlowResponsePayload handleDataExchange(FlowDataExchangePayload payload, BookingState state) {
+    public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload, BookingState state) {
         String origin = payload.getData().get("origin").toString();
         String destination = payload.getData().get("destination").toString();
-        logger.info("origin {}, destination {}", origin, destination);
 
-
-        state.setOrigin(origin);
-        state.setDestination(destination);
-        state.setStep(STEP_CHOOSE_DATE);
+        BookingState newState = state.withOrigin(origin)
+            .withDestination(destination)
+            .withStep(STEP_CHOOSE_DATE);
 
         String introText = "You're traveling from **" + capitalize(origin) + "** to **" + capitalize(destination) + "**. \n" +
             "When would you like to travel?";
@@ -38,12 +37,13 @@ public class ChooseDestinationHandler implements ScreenHandler {
         LocalDate today = LocalDate.now();
         LocalDate maxDate = today.plusDays(BOOKING_WINDOW_DAYS);
 
-        return new NextScreenResponsePayload(STEP_CHOOSE_DATE, Map.of(
+        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_CHOOSE_DATE, Map.of(
             "origin", origin,
             "destination", destination,
             "today", today.toString(),
             "max_date", maxDate.toString(),
             "date_intro", introText
         ));
+        return new ScreenHandlerResult(newState, nextScreenResponsePayload);
     }
 }
