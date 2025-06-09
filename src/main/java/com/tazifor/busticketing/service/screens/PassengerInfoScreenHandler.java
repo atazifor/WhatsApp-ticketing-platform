@@ -9,19 +9,24 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.tazifor.busticketing.service.Screen.*;
 
 @Component("PASSENGER_INFO")
 public class PassengerInfoScreenHandler implements ScreenHandler {
-    private final static Logger logger = LoggerFactory.getLogger(SummaryScreenHandler.class);
+    private final static Logger logger = LoggerFactory.getLogger(PassengerInfoScreenHandler.class);
 
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
+        logger.info("Passenger info screen handler called data {}", payload.getData());
         Map<String, Object> data = payload.getData();
-
+        String origin = data.get("origin").toString();
+        String destination = data.get("destination").toString();
+        String date = data.get("date").toString();
+        String time = data.get("time").toString();
         String fullName   = data.get("full_name").toString();
         String email      = data.get("email").toString();
         String phone      = data.get("phone").toString();
@@ -32,26 +37,20 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
         BookingState newState = state.withFullName(fullName).withEmail(email)
             .withPhone(phone)
             .withNumTickets(numTickets)
-            .withMoreDetails(moreDetails);
-
-        // Defensive in case they weren’t yet set in state
-        //if (data.containsKey("origin")) state.setOrigin(data.get("origin").toString());
-        //if (data.containsKey("agency")) state.setAgency(data.get("agency").toString());
-        //if (data.containsKey("class")) state.setTravelClass(data.get("class").toString());
-
-        newState = state.withStep(STEP_SUMMARY);
+            .withMoreDetails(moreDetails)
+            .withStep(STEP_SUMMARY);
 
         // Build SUMMARY screen data
         Map<String, Object> summaryData = new LinkedHashMap<>();
-        summaryData.put("appointment",   formatAppointment(state));
-        summaryData.put("details",       formatDetails(state));
-        summaryData.put("origin",   state.getOrigin());
-        summaryData.put("destination",   state.getDestination());
-        summaryData.put("agency",   state.getAgency());
-        summaryData.put("class",   state.getTravelClass());
-        summaryData.put("date",          state.getDate());
-        summaryData.put("time",          state.getTime());
-        summaryData.put("seat",          state.getChosenSeats());
+        summaryData.put("appointment",   formatAppointment(origin, destination, date, time));
+        summaryData.put("details",       formatDetails(fullName, email, phone, moreDetails));
+        summaryData.put("origin",   data.get("origin").toString());
+        summaryData.put("destination",   data.get("destination").toString());
+        summaryData.put("agency",   data.get("agency").toString());
+        summaryData.put("class",   data.get("class").toString());
+        summaryData.put("date",          data.get("date").toString());
+        summaryData.put("time",          data.get("time").toString());
+        summaryData.put("seat",          (List<String>)data.get("seat"));
         summaryData.put("full_name",     fullName);
         summaryData.put("email",         email);
         summaryData.put("phone",         phone);

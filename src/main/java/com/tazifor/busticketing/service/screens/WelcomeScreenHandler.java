@@ -63,9 +63,9 @@ public class WelcomeScreenHandler implements ScreenHandler {
             .map(city -> Map.of("id", city, "title", capitalize(city)))
             .toList();
 
-        return new NextScreenResponsePayload("CHOOSE_ORIGIN", Map.of(
-            "origins", cities
-        ));
+        return new NextScreenResponsePayload("CHOOSE_ORIGIN",
+            Map.of("origins", cities)
+        );
     }
 
     private FlowResponsePayload buildFaqScreen(String flowToken) {

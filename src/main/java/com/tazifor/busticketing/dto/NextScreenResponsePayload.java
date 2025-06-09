@@ -1,10 +1,13 @@
 package com.tazifor.busticketing.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.util.BookingStateCodec;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -37,4 +40,14 @@ public final class NextScreenResponsePayload implements FlowResponsePayload {
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Map<String, Object> data;
+
+    public static NextScreenResponsePayload of(String screen, Map<String, Object> data) {
+        return new NextScreenResponsePayload(screen, data);
+    }
+
+    public NextScreenResponsePayload withState(BookingState state) {
+        Map<String, Object> newData = new HashMap<>(data);
+        newData.put("_state", BookingStateCodec.encode(state));
+        return new NextScreenResponsePayload(screen, newData);
+    }
 }

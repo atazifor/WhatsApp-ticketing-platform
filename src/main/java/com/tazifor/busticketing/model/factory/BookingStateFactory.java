@@ -1,12 +1,15 @@
 package com.tazifor.busticketing.model.factory;
 
 import com.tazifor.busticketing.model.BookingState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class BookingStateFactory {
+    private final static Logger logger = LoggerFactory.getLogger(BookingStateFactory.class);
 
     /** Returns a completely empty BookingState */
     public static BookingState empty() {
@@ -23,7 +26,7 @@ public class BookingStateFactory {
      * Useful when rebuilding from WhatsApp data_exchange input.
      */
     public static BookingState fromPayload(Map<String, Object> data, String step) {
-        return BookingState.empty()
+        BookingState newState = BookingState.empty()
             .withStep(step)
             .withSelectedOption(asStringList(data.get("selected_option")))
             .withOrigin(asString(data.get("origin")))
@@ -41,6 +44,8 @@ public class BookingStateFactory {
             .withPhone(asString(data.get("phone")))
             .withNumTickets(asString(data.get("num_tickets")))
             .withMoreDetails(asString(data.get("more_details")));
+        logger.debug("BookingStateFactory.fromPayload: {}", newState);
+        return newState;
     }
 
     private static String asString(Object obj) {

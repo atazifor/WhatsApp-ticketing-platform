@@ -1,15 +1,13 @@
 package com.tazifor.busticketing.service;
 
 import com.tazifor.busticketing.client.WhatsAppApiClient;
-import com.tazifor.busticketing.dto.FlowDataExchangePayload;
-import com.tazifor.busticketing.dto.FlowResponsePayload;
-import com.tazifor.busticketing.dto.FinalScreenResponsePayload;
-import com.tazifor.busticketing.dto.ScreenHandlerResult;
+import com.tazifor.busticketing.dto.*;
 import com.tazifor.busticketing.dto.crypto.FlowEncryptedPayload;
 import com.tazifor.busticketing.model.BookingState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tazifor.busticketing.model.factory.BookingStateFactory;
 import com.tazifor.busticketing.service.screens.ScreenHandler;
+import com.tazifor.busticketing.util.BookingStateCodec;
 import com.tazifor.busticketing.util.ImageOverlayUtil;
 import com.tazifor.busticketing.util.StateDiffUtil;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +19,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Orchestrates both encrypted (endpoint‐powered) and unencrypted interactive Flows.
@@ -73,7 +72,9 @@ public class FlowService {
             }
 
             // 4) Rebuild or initialize the domain state
-            BookingState state = rebuildState(decryptedRequestPayload);
+            BookingState state = Optional.ofNullable(decryptedRequestPayload.getData().get("_state"))
+                .map(encoded -> BookingStateCodec.decode(encoded.toString()))
+                .orElse(BookingState.empty());
 
             // 5) Decide which UI screen to show next (or final)
             ScreenHandlerResult screenHandlerResult;
@@ -103,25 +104,24 @@ public class FlowService {
                     throw new IllegalArgumentException("Unknown action: " + action);
             }
 
+            BookingState newState = screenHandlerResult.newState();
             FlowResponsePayload flowResponsePayload = screenHandlerResult.response();
             // 6) If it’s a final payload, ensure flow_token is included in the ExtensionMessageResponse
             if (flowResponsePayload instanceof FinalScreenResponsePayload finalUi) {
-                logger.info("Final UI data {}", finalUi.getData());
-                logger.info("Decrypted request payload: {}", decryptedRequestPayload);
-                //finalUi.getData().getParams().put("flow_token", decryptedRequestPayload.getFlow_token());
                 ((FinalScreenResponsePayload.ExtensionMessageResponse)finalUi.getData().get("extension_message_response")).validate();
+            }else {
+                flowResponsePayload = ((NextScreenResponsePayload) flowResponsePayload).withState(newState);
             }
 
-            BookingState newState = screenHandlerResult.newState();
-            logger.info("State transition: [{}] → [{}]\n{}",
+            logger.info("State transition: [{}] → [{}]\n{}\nState\n-----\n{}",
                 state.getStep(),
                 newState.getStep(),
-                StateDiffUtil.prettyPrintDiff(state, newState)
+                StateDiffUtil.prettyPrintDiff(state, newState),
+                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(newState)
             );
 
             // 7) Serialize and re‐encrypt the new state
             String uiAsString = objectMapper.writeValueAsString(flowResponsePayload);
-            logger.debug("UI data {}", uiAsString);
             return encryptionService.encryptPayload(uiAsString, dr.aesKey(), dr.iv());
 
         });

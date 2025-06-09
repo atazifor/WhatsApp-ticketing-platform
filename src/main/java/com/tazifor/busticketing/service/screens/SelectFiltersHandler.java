@@ -6,6 +6,7 @@ import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.AgencySchedule;
 import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.service.ui.TripScheduleCardBuilder;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import java.util.Map;
 
 import static com.tazifor.busticketing.service.Screen.STEP_DISPLAY_RESULTS;
 import static com.tazifor.busticketing.service.Screen.extractList;
+import static org.springframework.util.StringUtils.capitalize;
 
 
 @Component("SELECT_FILTERS")
@@ -25,6 +27,7 @@ public class SelectFiltersHandler implements ScreenHandler {
     private final static Logger logger = LoggerFactory.getLogger(SelectFiltersHandler.class);
 
     private final ScheduleRepository scheduleRepository;
+    private final TripScheduleCardBuilder tripScheduleCardBuilder;
 
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload, BookingState state) {
@@ -48,10 +51,9 @@ public class SelectFiltersHandler implements ScreenHandler {
 
         // Call filtering logic (mocked here)
         List<AgencySchedule> schedules = scheduleRepository.findSchedules(origin, destination, date, selectedClasses, selectedAgencies, selectedTimes);
-        List<Map<String, Object>> matchingOptions = buildUI(schedules, date);
+        List<Map<String, Object>> matchingOptions = tripScheduleCardBuilder.build(schedules, date, newState);
 
 
-        logger.info("Matching options: {}", matchingOptions);
         if (matchingOptions.isEmpty()) {
             String summary = "No trips found from **" + capitalize(origin) +
                 "** to **" + capitalize(destination) +
@@ -99,49 +101,4 @@ public class SelectFiltersHandler implements ScreenHandler {
         return new ScreenHandlerResult(newState, nextScreenResponsePayload);
     }
 
-    private List<Map<String, Object>> buildUI(List<AgencySchedule> allSchedules, String date) {
-        return allSchedules.stream()
-            .map(schedule -> {
-                String title = truncate(schedule.agency() + " - " + schedule.travelClass(), 30);
-                String metadata = truncate(
-                    capitalize(schedule.from()) + " → " + capitalize(schedule.to()) +
-                        " | " + schedule.time() +
-                        " | " + formatPrice(schedule.price()),
-                    80
-                );
-                return Map.of(
-                    "id", schedule.agency() + "_" + schedule.travelClass() + "_" + schedule.time(),
-                    "main-content", Map.of(
-                        "title", title,
-                        "metadata", metadata
-                    ),
-                    "on-click-action", Map.of(
-                        "name", "data_exchange",
-                        "payload", Map.of(
-                            "screen", "CHOOSE_SEAT",
-                            "agency", schedule.agency(),
-                            "origin", schedule.from(),
-                            "destination", schedule.to(),
-                            "class", schedule.travelClass(),
-                            "date", date,
-                            "time", schedule.time(),
-                            "price", schedule.price()
-                        )
-                    )
-                );
-            })
-            .toList();
-    }
-
-    private String formatPrice(int price) {
-        return String.format("%,dF", price);
-    }
-
-    private String truncate(String str, int limit) {
-        return (str.length() <= limit) ? str : str.substring(0, limit - 1) + "…";
-    }
-
-    private String capitalize(String str) {
-        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
-    }
 }

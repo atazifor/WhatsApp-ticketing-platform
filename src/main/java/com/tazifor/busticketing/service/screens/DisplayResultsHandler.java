@@ -26,14 +26,12 @@ public class DisplayResultsHandler implements ScreenHandler {
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
 
-        LOGGER.info("DisplayResultsHandler.handleDataExchange for payload {}", payload);
-
         // 2) Advance our state machine to CHOOSE_SEAT
         BookingState newState = state.withStep(STEP_CHOOSE_SEAT);
 
         // 3) Fetch the cached bus image + seat coordinates from BusLayoutService
         BusLayoutService layoutService = BeanUtil.getBean(BusLayoutService.class);
-        String busBase64 = layoutService.getBase64BusImage(); // “data:image/png;base64,…”
+        String busBase64 = layoutService.getBase64BusImage(); // “responseData:image/png;base64,…”
         Map<String, Point> seatCoords = layoutService.getSeatCoordinates();
 
         if (busBase64 == null || seatCoords == null || seatCoords.isEmpty()) {
@@ -60,20 +58,21 @@ public class DisplayResultsHandler implements ScreenHandler {
             ))
             .collect(Collectors.toList());
 
-        // 4b) Put into a single data map
-        Map<String,Object> data = new LinkedHashMap<>();
-        data.put("origin", state.getOrigin());
-        data.put("destination", state.getDestination());
-        data.put("date", state.getDate());
-        data.put("time", state.getTime());
-        data.put("agency", state.getAgency());
-        data.put("class", state.getTravelClass());
-        data.put("image", busBase64);
-        data.put("seats", seats);
+        // 4b) Put into a single responseData map
+        Map<String, Object> data = payload.getData();
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("origin", data.get("origin").toString());
+        fields.put("destination", data.get("destination").toString());
+        fields.put("date", data.get("date").toString());
+        fields.put("time", data.get("time").toString());
+        fields.put("class", data.get("class").toString());
+        fields.put("agency", data.get("agency").toString());
+        fields.put("image", busBase64);
+        fields.put("seats", seats);
 
 
-        // 5) Return payload whose `data` matches your JSON layout’s placeholders
-        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_CHOOSE_SEAT, data);
+        // 5) Return payload whose `responseData` matches your JSON layout’s placeholders
+        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_CHOOSE_SEAT, fields);
         return new ScreenHandlerResult(newState, nextScreenResponsePayload);
     }
 }

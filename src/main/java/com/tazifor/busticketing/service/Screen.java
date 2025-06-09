@@ -98,20 +98,18 @@ public class Screen {
 
     }
 
-    public static String formatAppointment(BookingState state) {
-        return "%s on %s at %s".formatted(
-            state.getDestination(),
-            state.getDate(),
-            state.getTime()
+    public static String formatAppointment(String origin, String destination, String date, String time) {
+        return "From %s -> %s on %s at %s".formatted(
+            origin, destination, date, time
         );
     }
 
-    public static String formatDetails(BookingState state) {
+    public static String formatDetails(String name, String email, String phone, String moreDetails) {
         return "Name: %s%nEmail: %s%nPhone: %s%n\"%s\"".formatted(
-            state.getFullName(),
-            state.getEmail(),
-            state.getPhone(),
-            state.getMoreDetails() == null ? "" : state.getMoreDetails()
+            name,
+            email,
+            phone,
+            moreDetails == null ? "" : moreDetails
         );
     }
 

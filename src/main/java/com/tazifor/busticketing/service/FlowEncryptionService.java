@@ -66,7 +66,6 @@ public class FlowEncryptionService {
     public DecryptionResult decryptPayload(String encryptedFlowDataB64,
                                            String encryptedAesKeyB64,
                                            String ivB64) throws Exception {
-        logger.info("Encrypted payload: {} {} {}", encryptedFlowDataB64, encryptedAesKeyB64, ivB64);
         byte[] encryptedFlowData = Base64.getDecoder().decode(encryptedFlowDataB64);
         byte[] encryptedAesKey   = Base64.getDecoder().decode(encryptedAesKeyB64);
         byte[] iv                = Base64.getDecoder().decode(ivB64);
