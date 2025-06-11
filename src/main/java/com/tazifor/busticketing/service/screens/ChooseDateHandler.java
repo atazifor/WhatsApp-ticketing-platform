@@ -25,9 +25,11 @@ public class ChooseDateHandler implements ScreenHandler{
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
+
         String date = payload.getData().get("date").toString();
+
         BookingState newState = state.withDate(date)
-            .withStep(STEP_CHOOSE_TIME);
+            .withStep(STEP_CHOOSE_TIME);;
 
         // Grouped times by bucket
         Map<ScheduleTimeGrouper.TimeSlotGroup, List<Map<String, String>>> groupedTimeSlots = departureTimeSlotService.getGroupedTimeSlots();
@@ -39,9 +41,6 @@ public class ChooseDateHandler implements ScreenHandler{
         List<Map<String, String>> eveningSlots = groupedTimeSlots.get(ScheduleTimeGrouper.TimeSlotGroup.EVENING);
 
         NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_CHOOSE_TIME, Map.of(
-            "origin", state.getOrigin(),
-            "destination", state.getDestination(),
-            "date", date,
             "morning_slots", morningSlots,
             "afternoon_slots", afternoonSlots,
             "evening_slots", eveningSlots,

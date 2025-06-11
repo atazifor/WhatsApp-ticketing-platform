@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.tazifor.busticketing.service.Screen.*;
@@ -20,16 +19,16 @@ public class SummaryScreenHandler implements ScreenHandler {
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
 
-        Map<String, Object> data = payload.getData();
-        String origin = data.get("origin").toString();
-        String destination = data.get("destination").toString();
-        String date = data.get("date").toString();
-        String time = data.get("time").toString();
-        String travelClass = data.get("class").toString();
-        String fullName = data.get("full_name").toString();
-        String email = data.get("email").toString();
-        String phone = data.get("phone").toString();
-        String moreDetails = data.getOrDefault("more_details", "").toString();
+        //Map<String, Object> data = payload.getData();
+        String origin = state.getOrigin();
+        String destination = state.getDestination();
+        String date = state.getDate();
+        String time = state.getTime();
+        String travelClass = state.getTravelClass();
+        String fullName = state.getFullName();
+        String email = state.getEmail();
+        String phone = state.getPhone();
+        String moreDetails = state.getMoreDetails() != null ? state.getMoreDetails() : "";
 
         // Check if the user agreed to terms
         boolean agreed = Boolean.parseBoolean(
@@ -54,12 +53,12 @@ public class SummaryScreenHandler implements ScreenHandler {
         finalParams.put("date", date);
         finalParams.put("time", time);
         finalParams.put("class", travelClass);
-        finalParams.put("agency", data.get("agency").toString());
-        finalParams.put("seat", (List<String>)data.get("seat"));
+        finalParams.put("agency", state.getAgency());
+        finalParams.put("seat", state.getChosenSeats());
         finalParams.put("full_name", fullName);
         finalParams.put("email", email);
         finalParams.put("phone", phone);
-        finalParams.put("num_tickets", data.get("num_tickets").toString());
+        finalParams.put("num_tickets", state.getNumTickets());
         finalParams.put("more_details", moreDetails);
         finalParams.put("flow_token", payload.getFlow_token());
 

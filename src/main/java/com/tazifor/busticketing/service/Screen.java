@@ -113,31 +113,25 @@ public class Screen {
         );
     }
 
-    public static String buildSummaryText(Map<String, Object> summaryData) {
-        Object seatObj = summaryData.get("seat");
-        String seatDisplay;
-
-        if (seatObj == null) {
-            seatDisplay = "Not selected";
-        } else if (seatObj instanceof Collection<?>) {
-            Collection<?> seats = (Collection<?>) seatObj;
-            seatDisplay = seats.isEmpty() ? "Not selected" :
+    public static String buildSummaryText(BookingState state) {
+        List<String> seats = state.getChosenSeats();
+        String seatDisplay = seats.isEmpty() ? "Not selected" :
                 seats.size() == 1 ? seats.iterator().next().toString() :
                     String.join(", ", seats.stream().map(Object::toString).toList());
-        } else {
-            seatDisplay = seatObj.toString();
-        }
 
-        return "**Appointment:** " + summaryData.get("appointment") + "\n" +
-            "**Details:** "     + summaryData.get("details")     + "\n\n" +
-            "**Agency:** "      + summaryData.getOrDefault("agency", "N/A") + "\n" +
-            "**Class:** "       + summaryData.getOrDefault("class", "N/A") + "\n" +
-            "**Destination:** " + summaryData.get("destination") + "\n" +
-            "**Date:** "        + summaryData.get("date")        + "\n" +
-            "**Time:** "        + summaryData.get("time")        + "\n" +
+        String appointment = formatAppointment(state.getOrigin(), state.getDestination(), state.getDate(), state.getTime());
+        String details = formatDetails(state.getFullName(), state.getEmail(), state.getPhone(), state.getMoreDetails());
+
+        return "**Appointment:** " + appointment + "\n" +
+            "**Details:** "     + details     + "\n\n" +
+            "**Agency:** "      + state.getAgency() + "\n" +
+            "**Class:** "       + state.getTravelClass() + "\n" +
+            "**Destination:** " + state.getDestination() + "\n" +
+            "**Date:** "        + state.getDate()        + "\n" +
+            "**Time:** "        + state.getTime()        + "\n" +
             "**Seat(s):** "     + seatDisplay                    + "\n" +
-            "**Tickets:** "     + summaryData.get("num_tickets") + "\n\n" +
-            "_Any additional info:_ " + summaryData.get("more_details");
+            "**Tickets:** "     + state.getNumTickets() + "\n\n" +
+            "_Any additional info:_ " + state.getMoreDetails();
     }
 
     public static List<String> extractList(Object raw) {

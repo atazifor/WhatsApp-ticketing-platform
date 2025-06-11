@@ -27,7 +27,12 @@ public class DisplayResultsHandler implements ScreenHandler {
                                                   BookingState state) {
 
         // 2) Advance our state machine to CHOOSE_SEAT
-        BookingState newState = state.withStep(STEP_CHOOSE_SEAT);
+        Map<String, Object> data = payload.getData();
+
+        BookingState newState = state.withTime(data.get("time").toString())
+            .withTravelClass(data.get("class").toString())
+            .withAgency(data.get("agency").toString())
+            .withStep(STEP_CHOOSE_SEAT);
 
         // 3) Fetch the cached bus image + seat coordinates from BusLayoutService
         BusLayoutService layoutService = BeanUtil.getBean(BusLayoutService.class);
@@ -59,14 +64,7 @@ public class DisplayResultsHandler implements ScreenHandler {
             .collect(Collectors.toList());
 
         // 4b) Put into a single responseData map
-        Map<String, Object> data = payload.getData();
         Map<String, Object> fields = new LinkedHashMap<>();
-        fields.put("origin", data.get("origin").toString());
-        fields.put("destination", data.get("destination").toString());
-        fields.put("date", data.get("date").toString());
-        fields.put("time", data.get("time").toString());
-        fields.put("class", data.get("class").toString());
-        fields.put("agency", data.get("agency").toString());
         fields.put("image", busBase64);
         fields.put("seats", seats);
 

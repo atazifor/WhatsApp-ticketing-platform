@@ -57,11 +57,6 @@ public class ChooseTimeHandler implements ScreenHandler {
             )).toList();
 
         NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_SELECT_FILTERS, Map.of(
-            "origin", state.getOrigin(),
-            "destination", state.getDestination(),
-            "date", state.getDate(),
-            //"time", time,
-            "selected_times", allTimes,
             "class_options", classChips,
             "agency_options", agencyChips,
             "selected_classes", List.of(),

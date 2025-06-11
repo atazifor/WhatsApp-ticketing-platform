@@ -57,7 +57,8 @@
               "name": "data_exchange",
               "payload": {
                 "screen": "WELCOME_SCREEN",
-                "selected_option": "${form.selected_option}"
+                "selected_option": "${form.selected_option}",
+                "_state":"${data._state}"
               }
             }
           }
@@ -107,7 +108,8 @@
                   "name": "data_exchange",
                   "payload": {
                     "screen": "CHOOSE_ORIGIN",
-                    "origin": "${form.origin}"
+                    "origin": "${form.origin}",
+                    "_state":"${data._state}"
                   }
                 }
               }
@@ -171,8 +173,8 @@
                   "name": "data_exchange",
                   "payload": {
                     "screen": "CHOOSE_DESTINATION",
-                    "origin": "${data.origin}",
-                    "destination": "${form.destination}"
+                    "destination": "${form.destination}",
+                    "_state":"${data._state}"
                   }
                 }
               }
@@ -219,9 +221,8 @@
               "name": "data_exchange",
               "payload": {
                 "screen": "CHOOSE_DATE",
-                "origin": "${data.origin}",
-                "destination": "${data.destination}",
-                "date": "${form.date}"
+                "date": "${form.date}",
+                "_state":"${data._state}"
               }
             }
           }
@@ -382,12 +383,10 @@
               "name": "data_exchange",
               "payload": {
                 "screen": "CHOOSE_TIME",
-                "origin": "${data.origin}",
-                "destination": "${data.destination}",
-                "date": "${data.date}",
                 "selected_morning_times": "${form.selected_morning_times}",
                 "selected_afternoon_times": "${form.selected_afternoon_times}",
-                "selected_evening_times": "${form.selected_evening_times}"
+                "selected_evening_times": "${form.selected_evening_times}",
+                "_state":"${data._state}"
               }
             }
           }
@@ -482,13 +481,9 @@
               "name": "data_exchange",
               "payload": {
                 "screen": "DISPLAY_RESULTS",
-                "origin": "${data.origin}",
-                "destination": "${data.destination}",
-                "date": "${data.date}",
-                "time": "${data.time}",
-                "selected_times": "${data.selected_times}",
                 "selected_classes": "${form.selected_classes}",
-                "selected_agencies": "${form.selected_agencies}"
+                "selected_agencies": "${form.selected_agencies}",
+                "_state":"${data._state}"
               }
             }
           }
@@ -635,7 +630,8 @@
                 "time": "${data.time}",
                 "selected_times": "${data.selected_times}",
                 "selected_classes": "${data.selected_classes}",
-                "selected_agencies": "${data.selected_agencies}"
+                "selected_agencies": "${data.selected_agencies}",
+                "_state":"${data._state}"
               }
             }
           }
@@ -701,13 +697,8 @@
                   "name": "data_exchange",
                   "payload": {
                     "screen": "CHOOSE_SEAT",
-                    "origin": "${data.origin}",
-                    "destination": "${data.destination}",
-                    "date": "${data.date}",
-                    "time": "${data.time}",
-                    "class": "${data.class}",
-                    "agency": "${data.agency}",
-                    "seat": "${form.seat}"
+                    "seat": "${form.seat}",
+                    "_state":"${data._state}"
                   }
                 }
               }
@@ -779,18 +770,12 @@
                   "name": "data_exchange",
                   "payload": {
                     "screen": "PASSENGER_INFO",
-                    "origin": "${data.origin}",
-                    "destination": "${data.destination}",
-                    "date": "${data.date}",
-                    "time": "${data.time}",
-                    "agency": "${data.agency}",
-                    "class": "${data.class}",
-                    "seat": "${data.seat}",
                     "full_name": "${form.full_name}",
                     "email": "${form.email}",
                     "phone": "${form.phone}",
                     "num_tickets": "${form.num_tickets}",
-                    "more_details": "${form.more_details}"
+                    "more_details": "${form.more_details}",
+                    "_state":"${data._state}"
                   }
                 }
               }
@@ -857,18 +842,8 @@
                   "name": "data_exchange",
                   "payload": {
                     "screen": "SUMMARY",
-                    "agency": "${data.agency}",
-                    "class": "${data.class}",
-                    "origin": "${data.origin}",
-                    "destination": "${data.destination}",
-                    "date": "${data.date}",
-                    "time": "${data.time}",
-                    "seat": "${data.seat}",
-                    "full_name": "${data.full_name}",
-                    "email": "${data.email}",
-                    "phone": "${data.phone}",
-                    "num_tickets": "${data.num_tickets}",
-                    "agree_terms": "${form.agree_terms}"
+                    "agree_terms": "${form.agree_terms}",
+                    "_state":"${data._state}"
                   }
                 }
               }

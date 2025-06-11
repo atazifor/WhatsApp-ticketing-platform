@@ -34,11 +34,11 @@ public class SelectFiltersHandler implements ScreenHandler {
         // Extract form data
         Map<String, Object> data = payload.getData();
 
-        String origin = data.get("origin").toString();
-        String destination = data.get("destination").toString();
-        String date = data.get("date").toString();
+        String origin = state.getOrigin();
+        String destination = state.getDestination();
+        String date = state.getDate();
         //String time = data.get("time").toString();
-        List<String> selectedTimes = extractList(data.get("selected_times"));
+        List<String> selectedTimes = state.getSelectedTimes();
         List<String> selectedClasses = extractList(data.get("selected_classes"));
         List<String> selectedAgencies = extractList(data.get("selected_agencies"));
 
@@ -77,10 +77,10 @@ public class SelectFiltersHandler implements ScreenHandler {
             }
             newState = newState.withStep("NO_DISPLAY_RESULTS");
             NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload("NO_DISPLAY_RESULTS", Map.of(
-                "origin", origin,
-                "destination", destination,
-                "date", date,
-                "selected_times", selectedTimes,
+                //"origin", origin,
+                //"destination", destination,
+                //"date", date,
+                //"selected_times", selectedTimes,
                 "selected_classes", selectedClasses,
                 "selected_agencies", selectedAgencies,
                 "summary_text", summary
@@ -93,9 +93,6 @@ public class SelectFiltersHandler implements ScreenHandler {
 
         // Move to seat selection, or intermediate screen showing results
         NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_DISPLAY_RESULTS, Map.of(
-            "origin", origin,
-            "destination", destination,
-            "date", date,
             "trips", matchingOptions
         ));
         return new ScreenHandlerResult(newState, nextScreenResponsePayload);

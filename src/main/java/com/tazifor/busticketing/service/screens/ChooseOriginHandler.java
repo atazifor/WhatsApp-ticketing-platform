@@ -20,7 +20,9 @@ public class ChooseOriginHandler implements ScreenHandler {
     private final ScheduleRepository scheduleRepository;
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload, BookingState state) {
+
         String origin = payload.getData().get("origin").toString();
+
         BookingState newState = state.withOrigin(origin)
             .withStep(STEP_CHOOSE_DESTINATION);
 
@@ -35,7 +37,7 @@ public class ChooseOriginHandler implements ScreenHandler {
             "Now choose your destination";
 
         NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_CHOOSE_DESTINATION, Map.of(
-            "origin", origin,
+            //"origin", input.origin(),
             "origin_city_intro_text", introText,
             "destinations", destinations
         ));
