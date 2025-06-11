@@ -2,7 +2,7 @@ package com.tazifor.busticketing.service.ui;
 
 import com.tazifor.busticketing.model.AgencySchedule;
 import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.util.BookingStateCodec;
+import com.tazifor.busticketing.util.encoding.BookingStateCodec;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

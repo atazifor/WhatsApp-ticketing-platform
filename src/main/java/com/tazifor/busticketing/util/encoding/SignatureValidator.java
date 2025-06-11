@@ -1,4 +1,4 @@
-package com.tazifor.busticketing.util;
+package com.tazifor.busticketing.util.encoding;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -2,6 +2,7 @@ package com.tazifor.busticketing.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tazifor.busticketing.service.FlowEncryptionService;
+import com.tazifor.busticketing.util.encoding.EncryptionUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

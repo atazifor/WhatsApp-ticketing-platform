@@ -1,4 +1,4 @@
-package com.tazifor.busticketing.util;
+package com.tazifor.busticketing.util.encoding;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;

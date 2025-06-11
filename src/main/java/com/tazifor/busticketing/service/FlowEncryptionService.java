@@ -1,7 +1,7 @@
 package com.tazifor.busticketing.service;
 
 import com.tazifor.busticketing.config.properties.EncryptionConfig;
-import com.tazifor.busticketing.util.EncryptionUtils;
+import com.tazifor.busticketing.util.encoding.EncryptionUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

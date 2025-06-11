@@ -5,9 +5,8 @@ import com.tazifor.busticketing.dto.*;
 import com.tazifor.busticketing.dto.crypto.FlowEncryptedPayload;
 import com.tazifor.busticketing.model.BookingState;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tazifor.busticketing.model.factory.BookingStateFactory;
 import com.tazifor.busticketing.service.screens.ScreenHandler;
-import com.tazifor.busticketing.util.BookingStateCodec;
+import com.tazifor.busticketing.util.encoding.BookingStateCodec;
 import com.tazifor.busticketing.util.ImageOverlayUtil;
 import com.tazifor.busticketing.util.StateDiffUtil;
 import lombok.RequiredArgsConstructor;
@@ -155,10 +154,5 @@ public class FlowService {
             );
     }
 
-
-    /** Rebuilds or initializes business state from the FlowDataExchangePayload. */
-    private BookingState rebuildState(FlowDataExchangePayload payload) {
-        return BookingStateFactory.fromPayload(payload.getData(), payload.getScreen());
-    }
 }
 

@@ -1,7 +1,6 @@
-package com.tazifor.busticketing;
+package com.tazifor.busticketing.repository;
 
 import com.tazifor.busticketing.model.AgencySchedule;
-import com.tazifor.busticketing.service.screens.SelectFiltersHandler;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

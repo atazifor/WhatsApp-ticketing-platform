@@ -1,4 +1,4 @@
-package com.tazifor.busticketing.util;
+package com.tazifor.busticketing.util.encoding;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tazifor.busticketing.model.BookingState;

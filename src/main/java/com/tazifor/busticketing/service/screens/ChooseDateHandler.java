@@ -4,6 +4,9 @@ import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.service.DepartureTimeSlotService;
+import com.tazifor.busticketing.util.schedule.ScheduleTimeGrouper;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -14,8 +17,10 @@ import java.util.Map;
 import static com.tazifor.busticketing.service.Screen.STEP_CHOOSE_TIME;
 
 @Component("CHOOSE_DATE")
+@RequiredArgsConstructor
 public class ChooseDateHandler implements ScreenHandler{
     private final static Logger logger = LoggerFactory.getLogger(ChooseDateHandler.class);
+    private final DepartureTimeSlotService departureTimeSlotService;
 
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
@@ -25,21 +30,13 @@ public class ChooseDateHandler implements ScreenHandler{
             .withStep(STEP_CHOOSE_TIME);
 
         // Grouped times by bucket
-        List<Map<String, String>> morningSlots = List.of(
-            Map.of("id", "04:00", "title", "04:00 AM"),
-            Map.of("id", "08:00", "title", "08:00 AM"),
-            Map.of("id", "10:00", "title", "10:00 AM")
-        );
+        Map<ScheduleTimeGrouper.TimeSlotGroup, List<Map<String, String>>> groupedTimeSlots = departureTimeSlotService.getGroupedTimeSlots();
 
-        List<Map<String, String>> afternoonSlots = List.of(
-            Map.of("id", "12:00", "title", "12:00 PM"),
-            Map.of("id", "15:00", "title", "03:00 PM")
-        );
+        List<Map<String, String>> morningSlots = groupedTimeSlots.get(ScheduleTimeGrouper.TimeSlotGroup.MORNING);
 
-        List<Map<String, String>> eveningSlots = List.of(
-            Map.of("id", "18:00", "title", "06:00 PM"),
-            Map.of("id", "20:30", "title", "08:30 PM")
-        );
+        List<Map<String, String>> afternoonSlots = groupedTimeSlots.get(ScheduleTimeGrouper.TimeSlotGroup.AFTERNOON);
+
+        List<Map<String, String>> eveningSlots = groupedTimeSlots.get(ScheduleTimeGrouper.TimeSlotGroup.EVENING);
 
         NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_CHOOSE_TIME, Map.of(
             "origin", state.getOrigin(),

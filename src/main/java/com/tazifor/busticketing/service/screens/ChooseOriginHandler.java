@@ -1,8 +1,7 @@
 package com.tazifor.busticketing.service.screens;
 
-import com.tazifor.busticketing.ScheduleRepository;
+import com.tazifor.busticketing.repository.ScheduleRepository;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
-import com.tazifor.busticketing.dto.FlowResponsePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
