@@ -65,24 +65,43 @@ public class Screen {
             seatDisplay = seatObj.toString();
         }
 
+        int numTickets = Integer.parseInt(summaryData.get("num_tickets").toString());
+        int oneWayPrice = Integer.parseInt(summaryData.get("price").toString());
+        boolean isRoundTrip = Boolean.TRUE.equals(summaryData.get("is_round_trip"));
+
+        String pricingBlock;
+        if (isRoundTrip) {
+            int fullPrice = oneWayPrice * 2 * numTickets;
+            int discounted = (int) (fullPrice * 0.85);
+            pricingBlock = """
+            💰 Price:     ~~%d FCFA~~ %d FCFA (round trip 15%% off)
+            🔁 Round trip selected!
+            📞 Call 650000000 to confirm return
+            """.formatted(fullPrice, discounted);
+        } else {
+            int totalPrice = oneWayPrice * numTickets;
+            pricingBlock = "💰 Price:     %d FCFA".formatted(totalPrice);
+        }
+
         return """
-            🎟️ E-Ticket Confirmation
-            --------------------------
-            👤 Passenger:  %s
-            📧 Email:      %s
-            📱 Phone:      %s
-            
-            🚍 Agency:     %s
-            💺 Class:      %s
-            🛣️ From → To:  %s → %s
-            📅 Date:       %s
-            ⏰ Time:       %s
-            🎫 Seat(s):    %s
-            🔢 Tickets:    %s
-            --------------------------
-            📍 Please arrive 15 minutes early
-            ✅ Safe travels with us!
-            """.formatted(
+        🎟️ E-Ticket Confirmation
+        --------------------------
+        👤 Passenger:  %s
+        📧 Email:      %s
+        📱 Phone:      %s
+        
+        🚍 Agency:     %s
+        💺 Class:      %s
+        🛣️ From → To:  %s → %s
+        📅 Date:       %s
+        ⏰ Time:       %s
+        🎫 Seat(s):    %s
+        🔢 Tickets:    %s
+        %s
+        --------------------------
+        📍 Please arrive 15 minutes early
+        ✅ Safe travels with us!
+        """.formatted(
             summaryData.get("full_name"),
             summaryData.get("email"),
             summaryData.get("phone"),
@@ -93,10 +112,11 @@ public class Screen {
             summaryData.get("date"),
             summaryData.get("time"),
             seatDisplay,
-            summaryData.get("num_tickets")
+            numTickets,
+            pricingBlock
         );
-
     }
+
 
     public static String formatAppointment(String origin, String destination, String date, String time) {
         return "From %s -> %s on %s at %s".formatted(
@@ -116,11 +136,27 @@ public class Screen {
     public static String buildSummaryText(BookingState state) {
         List<String> seats = state.getChosenSeats();
         String seatDisplay = seats.isEmpty() ? "Not selected" :
-                seats.size() == 1 ? seats.iterator().next().toString() :
-                    String.join(", ", seats.stream().map(Object::toString).toList());
+            seats.size() == 1 ? seats.iterator().next().toString() :
+                String.join(", ", seats.stream().map(Object::toString).toList());
 
         String appointment = formatAppointment(state.getOrigin(), state.getDestination(), state.getDate(), state.getTime());
         String details = formatDetails(state.getFullName(), state.getEmail(), state.getPhone(), state.getMoreDetails());
+
+        int pricePerTicket = Integer.parseInt(state.getPrice());
+        int numTickets = Integer.parseInt(state.getNumTickets());
+        int oneWayTotal = pricePerTicket * numTickets;
+
+        boolean isRoundTrip = Boolean.TRUE.equals(state.isRoundTrip());
+
+        String pricingSection;
+        if (isRoundTrip) {
+            int fullRoundTrip = oneWayTotal * 2;
+            int discounted = (int) (fullRoundTrip * 0.85);
+
+            pricingSection = "**Price:** ~~" + fullRoundTrip + " FCFA~~ " + discounted + " FCFA _(round trip 15% off)_";
+        } else {
+            pricingSection = "**Price:** " + oneWayTotal + " FCFA";
+        }
 
         return "**Appointment:** " + appointment + "\n" +
             "**Details:** "     + details     + "\n\n" +
@@ -130,9 +166,11 @@ public class Screen {
             "**Date:** "        + state.getDate()        + "\n" +
             "**Time:** "        + state.getTime()        + "\n" +
             "**Seat(s):** "     + seatDisplay                    + "\n" +
-            "**Tickets:** "     + state.getNumTickets() + "\n\n" +
+            "**Tickets:** "     + numTickets + "\n" +
+            pricingSection + "\n\n" +
             "_Any additional info:_ " + state.getMoreDetails();
     }
+
 
     public static List<String> extractList(Object raw) {
         if (raw == null) return List.of();

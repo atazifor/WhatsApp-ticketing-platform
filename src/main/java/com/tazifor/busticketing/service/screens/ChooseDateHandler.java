@@ -27,8 +27,10 @@ public class ChooseDateHandler implements ScreenHandler{
                                                   BookingState state) {
 
         String date = payload.getData().get("date").toString();
+        boolean isRoundTrip = payload.getData().getOrDefault("is_round_trip", false).toString().equals("true");
 
         BookingState newState = state.withDate(date)
+            .withRoundTrip(isRoundTrip)
             .withStep(STEP_CHOOSE_TIME);;
 
         // Grouped times by bucket

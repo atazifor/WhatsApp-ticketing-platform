@@ -23,6 +23,7 @@ public class SummaryScreenHandler implements ScreenHandler {
         String origin = state.getOrigin();
         String destination = state.getDestination();
         String date = state.getDate();
+        String isRoundTrip = state.isRoundTrip() ? "true" : "false";
         String time = state.getTime();
         String travelClass = state.getTravelClass();
         String fullName = state.getFullName();
@@ -51,9 +52,11 @@ public class SummaryScreenHandler implements ScreenHandler {
         finalParams.put("origin", origin);
         finalParams.put("destination", destination);
         finalParams.put("date", date);
+        finalParams.put("is_round_trip", isRoundTrip);
         finalParams.put("time", time);
         finalParams.put("class", travelClass);
         finalParams.put("agency", state.getAgency());
+        finalParams.put("price", state.getPrice());
         finalParams.put("seat", state.getChosenSeats());
         finalParams.put("full_name", fullName);
         finalParams.put("email", email);

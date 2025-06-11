@@ -40,7 +40,8 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
 
         // Build SUMMARY screen data
         Map<String, Object> summaryData = new LinkedHashMap<>();
-        summaryData.put("summary_text",  buildSummaryText(newState));
+        String summary = buildSummaryText(newState);
+        summaryData.put("summary_text", summary);
 
         NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_SUMMARY, summaryData);
         return new ScreenHandlerResult(newState, nextScreenResponsePayload);

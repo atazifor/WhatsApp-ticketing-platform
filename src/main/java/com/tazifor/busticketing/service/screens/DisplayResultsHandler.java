@@ -32,6 +32,7 @@ public class DisplayResultsHandler implements ScreenHandler {
         BookingState newState = state.withTime(data.get("time").toString())
             .withTravelClass(data.get("class").toString())
             .withAgency(data.get("agency").toString())
+            .withPrice(data.get("price").toString())
             .withStep(STEP_CHOOSE_SEAT);
 
         // 3) Fetch the cached bus image + seat coordinates from BusLayoutService

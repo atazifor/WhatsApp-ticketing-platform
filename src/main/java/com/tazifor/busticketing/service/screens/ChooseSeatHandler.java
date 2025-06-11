@@ -36,16 +36,6 @@ public class ChooseSeatHandler implements ScreenHandler {
         });
 
 
-        // Build the final payload for passenger info
-       /* Map<String, Object> fields = new LinkedHashMap<>();
-        fields.put("origin", data.get("origin").toString());
-        fields.put("destination", data.get("destination").toString());
-        fields.put("date", data.get("date").toString());
-        fields.put("time", data.get("time").toString());
-        fields.put("class", data.get("class").toString());
-        fields.put("agency", data.get("agency").toString());
-        fields.put("seat", chosenSeats);*/
-
         NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_PASSENGER_INFORMATION, Map.of());
         return new ScreenHandlerResult(newState, nextScreenResponsePayload);
     }

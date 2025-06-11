@@ -20,11 +20,13 @@ public final class BookingState {
     private final String origin;
     private final String destination;
     private final String date;
+    private final boolean roundTrip;
     private final List<String> selectedTimes;
     private final String time;
     private final List<String> selectedClasses;
     private final String travelClass;
     private final String agency;
+    private final String price;
     private final List<String> selectedAgencies;
     private final List<String> chosenSeats;
     private final String fullName;
@@ -40,11 +42,13 @@ public final class BookingState {
         @JsonProperty("origin") String origin,
         @JsonProperty("destination") String destination,
         @JsonProperty("date") String date,
+        @JsonProperty("is_round_trip") boolean roundTrip,
         @JsonProperty("selectedTimes") List<String> selectedTimes,
         @JsonProperty("time") String time,
         @JsonProperty("selectedClasses") List<String> selectedClasses,
         @JsonProperty("travelClass") String travelClass,
         @JsonProperty("agency") String agency,
+        @JsonProperty("price") String price,
         @JsonProperty("selectedAgencies") List<String> selectedAgencies,
         @JsonProperty("chosenSeats") List<String> chosenSeats,
         @JsonProperty("fullName") String fullName,
@@ -58,11 +62,13 @@ public final class BookingState {
         this.origin = origin;
         this.destination = destination;
         this.date = date;
+        this.roundTrip = roundTrip;
         this.selectedTimes = selectedTimes;
         this.time = time;
         this.selectedClasses = selectedClasses;
         this.travelClass = travelClass;
         this.agency = agency;
+        this.price = price;
         this.selectedAgencies = selectedAgencies;
         this.chosenSeats = chosenSeats;
         this.fullName = fullName;
@@ -81,11 +87,13 @@ public final class BookingState {
             null, // origin
             null, // destination
             null, // date
+            false, // isRoundTrip
             Collections.emptyList(), // selectedTimes
             null, // time
             Collections.emptyList(), // selectedClasses
             null, // travelClass
             null, // agency
+            null, // price
             Collections.emptyList(), // selectedAgencies
             Collections.emptyList(), // chosenSeats
             null, // fullName
