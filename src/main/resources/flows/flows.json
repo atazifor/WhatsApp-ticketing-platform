@@ -68,7 +68,7 @@
 
     {
       "id": "CHOOSE_ORIGIN",
-      "title": "🚏 Where are you leaving from?",
+      "title": "🚏 Origin",
       "data": {
         "origins": {
           "type": "array",
@@ -95,9 +95,10 @@
             "name": "origin_form",
             "children": [
               {
-                "type": "Dropdown",
-                "label": "Origin city",
+                "type": "RadioButtonsGroup",
+                "label": "Departure City",
                 "name": "origin",
+                "description": "Where are you traveling from?",
                 "data-source": "${data.origins}",
                 "required": true
               },
@@ -121,7 +122,7 @@
 
     {
       "id": "CHOOSE_DESTINATION",
-      "title": "📍 Where are you headed?",
+      "title": "📍 Destination",
       "data": {
         "origin": {
           "type": "string",
@@ -160,9 +161,10 @@
                 "markdown": true
               },
               {
-                "type": "Dropdown",
-                "label": "Your destination",
+                "type": "RadioButtonsGroup",
+                "label": "Destination City",
                 "name": "destination",
+                "description": "Where are you traveling to?",
                 "data-source": "${data.destinations}",
                 "required": true
               },
@@ -206,13 +208,41 @@
             "markdown": true
           },
           {
+            "type": "RadioButtonsGroup",
+            "label": "Trip Typ",
+            "name": "is_round_trip",
+            "init-value": "false",
+            "required": true,
+            "data-source": [
+              {
+                "id": "false",
+                "title": "One Way"
+              },
+              {
+                "id": "true",
+                "title": "Round Trip"
+              }
+            ]
+          },
+          {
             "type": "CalendarPicker",
-            "label": "Choose a date",
+            "label": "Departure date",
             "name": "date",
             "min-date": "${data.today}",
             "max-date": "${data.max_date}",
             "init-value": "${data.today}",
             "required": true
+          },
+          {
+            "type": "If",
+            "condition": "${form.is_round_trip} == 'true'",
+            "then": [
+              {
+                "type": "TextBody",
+                "text": "🔁 You’ll need to call the agency to confirm your return schedule. And any round trip discounts will be applied after you select the agency",
+                "markdown": true
+              }
+            ]
           },
           {
             "type": "Footer",
@@ -222,6 +252,7 @@
               "payload": {
                 "screen": "CHOOSE_DATE",
                 "date": "${form.date}",
+                "is_round_trip": "${form.is_round_trip}",
                 "_state":"${data._state}"
               }
             }

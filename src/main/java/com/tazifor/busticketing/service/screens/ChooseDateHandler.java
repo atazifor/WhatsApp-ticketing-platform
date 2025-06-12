@@ -4,7 +4,7 @@ import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.service.DepartureTimeSlotService;
+import com.tazifor.busticketing.service.StaticLookupService;
 import com.tazifor.busticketing.util.schedule.ScheduleTimeGrouper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -20,7 +20,7 @@ import static com.tazifor.busticketing.service.Screen.STEP_CHOOSE_TIME;
 @RequiredArgsConstructor
 public class ChooseDateHandler implements ScreenHandler{
     private final static Logger logger = LoggerFactory.getLogger(ChooseDateHandler.class);
-    private final DepartureTimeSlotService departureTimeSlotService;
+    private final StaticLookupService departureTimeSlotService;
 
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
