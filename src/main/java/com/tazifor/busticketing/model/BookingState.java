@@ -29,9 +29,7 @@ public final class BookingState {
     private final String price;
     private final List<String> selectedAgencies;
     private final List<String> chosenSeats;
-    private final String fullName;
-    private final String email;
-    private final String phone;
+    private final List<Passenger> passengerList;
     private final String numTickets;
     private final String moreDetails;
 
@@ -51,9 +49,7 @@ public final class BookingState {
         @JsonProperty("price") String price,
         @JsonProperty("selectedAgencies") List<String> selectedAgencies,
         @JsonProperty("chosenSeats") List<String> chosenSeats,
-        @JsonProperty("fullName") String fullName,
-        @JsonProperty("email") String email,
-        @JsonProperty("phone") String phone,
+        @JsonProperty("passengerList") List<Passenger> passengerList,
         @JsonProperty("numTickets") String numTickets,
         @JsonProperty("moreDetails") String moreDetails
     ) {
@@ -71,9 +67,7 @@ public final class BookingState {
         this.price = price;
         this.selectedAgencies = selectedAgencies;
         this.chosenSeats = chosenSeats;
-        this.fullName = fullName;
-        this.email = email;
-        this.phone = phone;
+        this.passengerList = passengerList;
         this.numTickets = numTickets;
         this.moreDetails = moreDetails;
     }
@@ -96,9 +90,7 @@ public final class BookingState {
             null, // price
             Collections.emptyList(), // selectedAgencies
             Collections.emptyList(), // chosenSeats
-            null, // fullName
-            null, // email
-            null, // phone
+            Collections.emptyList(), //passenger list
             null, // numTickets
             null  // moreDetails
         );

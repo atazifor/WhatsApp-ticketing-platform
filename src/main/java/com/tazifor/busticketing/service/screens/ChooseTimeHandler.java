@@ -1,10 +1,10 @@
 package com.tazifor.busticketing.service.screens;
 
-import com.tazifor.busticketing.repository.ScheduleRepository;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.service.StaticLookupService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.tazifor.busticketing.service.Screen.STEP_SELECT_FILTERS;
-import static com.tazifor.busticketing.service.Screen.extractList;
+import static com.tazifor.busticketing.util.BookingFormatter.extractList;
 import static org.springframework.util.StringUtils.capitalize;
 
 
@@ -24,7 +24,7 @@ import static org.springframework.util.StringUtils.capitalize;
 public class ChooseTimeHandler implements ScreenHandler {
     private static final Logger logger = LoggerFactory.getLogger(ChooseTimeHandler.class);
 
-    private final ScheduleRepository scheduleRepository;
+    private final StaticLookupService lookupService;
 
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload, BookingState state) {
@@ -42,14 +42,14 @@ public class ChooseTimeHandler implements ScreenHandler {
         BookingState newState = state.withSelectedTimes(allTimes)
             .withStep(STEP_SELECT_FILTERS);
 
-        List<Map<String, Object>> classChips = scheduleRepository.getAvailableTravelClasses().stream()
+        List<Map<String, Object>> classChips = lookupService.getAvailableTravelClasses().stream()
             .map(cls -> Map.<String, Object>of(
                 "id", cls,
                 "title", capitalize(cls),
                 "enabled", true
             )).toList();
 
-        List<Map<String, Object>> agencyChips = scheduleRepository.getAvailableAgencies().stream()
+        List<Map<String, Object>> agencyChips = lookupService.getAvailableAgencies().stream()
             .map(agency -> Map.<String, Object>of(
                 "id", agency,
                 "title", agency,

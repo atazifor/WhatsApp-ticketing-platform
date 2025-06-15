@@ -1,7 +1,8 @@
 package com.tazifor.busticketing.service;
 
 import com.tazifor.busticketing.model.AgencySchedule;
-import com.tazifor.busticketing.repository.ScheduleRepository;
+import com.tazifor.busticketing.model.ScheduleDetails;
+import com.tazifor.busticketing.repository.ScheduleDetailsLoader;
 import com.tazifor.busticketing.util.schedule.CityPriorityUtil;
 import com.tazifor.busticketing.util.schedule.ScheduleTimeGrouper;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * StaticLookupService caches frequently accessed static or semi-static data
@@ -30,22 +32,26 @@ import java.util.Map;
  *   <li>Labeling schedules by time of day</li>
  * </ul>
  *
- * @see ScheduleRepository
+ * @see ScheduleDetailsLoader
  * @see CityPriorityUtil
  * @see ScheduleTimeGrouper
  */
 @Component
 @RequiredArgsConstructor
 public class StaticLookupService {
-    private final ScheduleRepository scheduleRepository;
+    private final ScheduleDetailsLoader scheduleDetailsLoader;
     private volatile Map<ScheduleTimeGrouper.TimeSlotGroup, List<Map<String, String>>> timeSlots;
     private volatile List<String> cities;
+    private volatile List<String> agencies;
+    private volatile List<String> travelClasses;
 
     public Map<ScheduleTimeGrouper.TimeSlotGroup, List<Map<String, String>>> getGroupedTimeSlots() {
         if (timeSlots == null) {
             synchronized (this) {
                 if (timeSlots == null) {
-                    List<AgencySchedule> allSchedules = scheduleRepository.getAllSchedules(); // or a specialized method
+                    List<AgencySchedule> allSchedules = scheduleDetailsLoader.getAllSchedules().stream()
+                        .map(ScheduleDetails::schedule)
+                        .toList(); // or a specialized method
                     timeSlots = ScheduleTimeGrouper.groupByTimeSlot(allSchedules);
                 }
             }
@@ -57,7 +63,10 @@ public class StaticLookupService {
         if (cities == null) {
             synchronized (this) {
                 if (cities == null) {
-                    List<String> availableCities = scheduleRepository.getAvailableCities();
+                    List<String> availableCities = scheduleDetailsLoader.getAllSchedules().stream()
+                        .flatMap(scheduleDetails -> Stream.of(scheduleDetails.schedule().from(), scheduleDetails.schedule().to() ) )
+                        .distinct()
+                        .toList();
                     cities = CityPriorityUtil.sortCitiesByPriority(availableCities);
                 }
             }
@@ -65,6 +74,35 @@ public class StaticLookupService {
         return cities;
     }
 
+    public List<String> getAvailableAgencies() {
+        if (agencies == null) {
+            synchronized (this) {
+                if (agencies == null) {
+                    agencies = scheduleDetailsLoader.getAllSchedules().stream()
+                        .map(sd -> sd.schedule().agency())
+                        .distinct()
+                        .sorted()
+                        .toList();
+                }
+            }
+        }
+        return agencies;
+    }
+
+    public List<String> getAvailableTravelClasses() {
+        if (travelClasses == null) {
+            synchronized (this) {
+                if (travelClasses == null) {
+                    travelClasses = scheduleDetailsLoader.getAllSchedules().stream()
+                        .map(sd -> sd.schedule().travelClass())
+                        .distinct()
+                        .sorted()
+                        .toList();
+                }
+            }
+        }
+        return travelClasses;
+    }
     /**
      * <p>
      *Call departureTimeSlotService.invalidateCache() only when:
@@ -78,5 +116,8 @@ public class StaticLookupService {
      */
     public void invalidateCache() {
         timeSlots = null;
+        cities = null;
+        agencies = null;
+        travelClasses = null;
     }
 }

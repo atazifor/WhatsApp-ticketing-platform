@@ -8,9 +8,11 @@ import org.springframework.stereotype.Component;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 
@@ -28,8 +30,8 @@ public class ImageOverlayUtil {
     /** We’ll keep a direct reference to the “base” BufferedImage in memory */
     private BufferedImage baseImage;
 
-    /** Cached seat → (x,y) map */
-    private Map<String, Point> seatCoords;
+    /** Cached seat boundary→ (x,y) map */
+    private Map<String, Rectangle> seatBounds;
 
 
     @PostConstruct
@@ -45,56 +47,98 @@ public class ImageOverlayUtil {
             throw new IllegalStateException("Failed to decode base bus image");
         }
 
-        // 2) Grab the seat‐coordinate map
-        this.seatCoords = busLayoutService.getSeatCoordinates();
-        if (seatCoords == null || seatCoords.isEmpty()) {
-            throw new IllegalStateException("No seat coordinates found");
+        // 3) Grab seat boundaries
+        this.seatBounds = busLayoutService.getSeatBounds();
+        if (seatBounds == null || seatBounds.isEmpty()) {
+            throw new IllegalStateException("No seat bounds found");
         }
     }
 
     /**
+     * Highlights which seats are available (green) vs taken (gray), with a legend.
+     */
+    public String createAvailabilityOverlay(Set<String> availableSeats) {
+        BufferedImage copy = getBaseCopy();
+        Graphics2D g = copy.createGraphics();
+
+        // Available seats: green
+        Color availC = new Color(0, 128, 0, 100);
+        availableSeats.forEach(id -> fillSeatWithColor(g, id, availC));
+
+        // Taken seats: gray
+        Color takenC = new Color(128, 128, 128, 100);
+        seatBounds.keySet().stream()
+            .filter(id -> !availableSeats.contains(id))
+            .forEach(id -> fillSeatWithColor(g, id, takenC));
+
+        addLegend(g, Map.of(
+            "Available", new Color(0, 128, 0, 180),
+            "Taken", new Color(128, 128, 128, 180)
+        ));
+        g.dispose();
+        return encodeToBase64(copy);
+    }
+
+    /**
      * Given a list of selected seat IDs (e.g. ["A1","C2"]), return a new Base64‐encoded PNG
-     * where each of those seats is highlighted with a semi-transparent overlay.
+     * where each of those seats is highlighted with a semi-transparent overlay, with a legend.
      *
      * @param selectedSeats list of seat IDs to highlight
-     * @return "data:image/png;base64, …" new PNG string
+     * @return "base64, …" new PNG string
      */
     public String createImageWithHighlights(List<String> selectedSeats) {
-        if (baseImage == null) {
-            throw new IllegalStateException("Base bus image not initialized");
-        }
-
-        // 3) Copy the base image so we don’t modify it
-        BufferedImage copy = new BufferedImage(
-            baseImage.getWidth(),
-            baseImage.getHeight(),
-            BufferedImage.TYPE_INT_ARGB
-        );
+        BufferedImage copy = getBaseCopy();
         Graphics2D g = copy.createGraphics();
-        g.drawImage(baseImage, 0, 0, null);
 
-        // 4) Draw a semi-transparent red circle (highlight) around each seat’s stored coordinates
-        g.setColor(new Color(255, 0, 0, 128));  // red with 50% opacity
-        int highlightRadius =  (int)(busLayoutService.getSeatCoordinates().values().iterator().next().getX() * 0 + 20);
-        // We pick 20 px here as a generic radius;
-        // if you want a different diameter, you could read it from BusLayoutConfig.
+        Color selC = new Color(255, 0, 0, 128);
+        selectedSeats.forEach(id -> fillSeatWithColor(g, id, selC));
 
-        for (String seatId : selectedSeats) {
-            Point p = seatCoords.get(seatId);
-            if (p == null) continue; // skip invalid keys
-            int cx = p.x - (highlightRadius / 2);
-            int cy = p.y - (highlightRadius / 2);
-            g.fillOval(cx, cy, highlightRadius, highlightRadius);
-        }
+        addLegend(g, Map.of("Selected", new Color(255, 0, 0, 180)));
         g.dispose();
+        return encodeToBase64(copy);
+    }
 
-        // 5) Encode copy to Base64
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            ImageIO.write(copy, "PNG", baos);
-            String b64 = Base64.getEncoder().encodeToString(baos.toByteArray());
-            return "data:image/png;base64," + b64;
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to encode overlaid image: " + ex.getMessage(), ex);
+    /* clones the base layout image and returns it as a BufferedImage.*/
+    private BufferedImage getBaseCopy() {
+        BufferedImage copy = new BufferedImage(
+            baseImage.getWidth(), baseImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D cg = copy.createGraphics();
+        cg.drawImage(baseImage, 0, 0, null);
+        cg.dispose();
+        return copy;
+    }
+    /* draws the colored overlay at a seat’s coordinates.*/
+    private void fillSeatWithColor(Graphics2D g, String seatId, Color color) {
+        Rectangle rect = seatBounds.get(seatId);
+        if (rect != null) {
+            g.setColor(color);
+            g.fillRect(rect.x, rect.y, rect.width, rect.height);
         }
     }
+    /* draws your seat color legend in the bottom-left.*/
+    private void addLegend(Graphics2D g, Map<String, Color> legendItems) {
+        int pad = 10, boxSize = 15;
+        int x = pad, y = baseImage.getHeight() - legendItems.size() * (boxSize + 5) - pad;
+        g.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+        for (Map.Entry<String, Color> entry : legendItems.entrySet()) {
+            g.setColor(entry.getValue());
+            g.fillRect(x, y, boxSize, boxSize);
+            g.setColor(Color.BLACK);
+            g.drawRect(x, y, boxSize, boxSize);
+            g.drawString(entry.getKey(), x + boxSize + 5, y + boxSize - 3);
+            y += boxSize + 5;
+        }
+    }
+    /* encodes the final image for sending via WhatsApp.*/
+    private String encodeToBase64(BufferedImage img) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            ImageIO.write(img, "PNG", baos);
+            //return "data:image/png;base64," + Base64.getEncoder().encodeToString(baos.toByteArray());
+            return Base64.getEncoder().encodeToString(baos.toByteArray());
+        } catch (IOException ex) {
+            throw new RuntimeException("Failed to encode image", ex);
+        }
+    }
+
 }

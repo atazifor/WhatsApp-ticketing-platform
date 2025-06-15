@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
@@ -29,7 +30,9 @@ public class BusLayoutService {
 
     /** After initialization, holds seatID→center‐Point (e.g. "A1"→(x,y)). */
     @Getter
-    private Map<String, java.awt.Point> seatCoordinates;
+    private Map<String, Point> seatCoordinates;
+    @Getter
+    private Map<String, Rectangle> seatBounds;
 
     /** After initialization, holds “data:image/png;base64,…” for the bus layout. */
     @Getter
@@ -42,6 +45,7 @@ public class BusLayoutService {
             BusLayoutGenerator.GenerationResult result = generator.generateLayout();
             BufferedImage busImage = result.image();
             this.seatCoordinates = result.seatCenters();
+            seatBounds = result.seatBounds();
 
             // 2) Encode busImage → PNG → Base64
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {

@@ -1,6 +1,7 @@
 package com.tazifor.busticketing.client;
 
 import com.tazifor.busticketing.config.properties.WhatsAppProperties;
+import com.tazifor.busticketing.whatsapp.session.SessionContextStore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -33,8 +34,11 @@ public class WhatsAppApiClient {
     @Getter
     private final WebClient webClient;
 
+    private final SessionContextStore sessionContextStore;
+
     @Autowired
-    public WhatsAppApiClient(WhatsAppProperties config) {
+    public WhatsAppApiClient(WhatsAppProperties config, SessionContextStore sessionContextStore) {
+        this.sessionContextStore = sessionContextStore;
         // Preconfigure WebClient with base URL and Authorization header
         //"https://graph.facebook.com/v22.0/" + phoneNumberId "
         String uri = String.format("%s/%s/%s", config.baseUrl(), config.version(), config.phoneNumberId());
@@ -116,6 +120,9 @@ public class WhatsAppApiClient {
                                       Map<String, Object> flowActionPayload) {
         // flowActionPayload may be empty or contain “data” for the first screen
 
+        String flowToken = (String)flowActionPayload.getOrDefault("flow_token", generateRandomToken());
+        sessionContextStore.saveUser(flowToken, to);
+
         Map<String, Object> interactive = Map.<String, Object>of(
             "type", "flow",
             "body", Map.of("text", messageBody), // optional prompt text
@@ -125,7 +132,7 @@ public class WhatsAppApiClient {
                     "flow_message_version", "3",
                     "flow_cta", flowCta,
                     "flow_id", flowId,
-                    "flow_token", flowActionPayload.getOrDefault("flow_token", generateRandomToken()),
+                    "flow_token", flowToken,
                     "flow_action", "data_exchange" //get data from endpoint url
                 )
             )
@@ -142,7 +149,7 @@ public class WhatsAppApiClient {
                         "flow_message_version", "3",
                         "flow_cta", flowCta,
                         "flow_id", flowId,
-                        "flow_token", flowActionPayload.getOrDefault("flow_token", generateRandomToken()),
+                        "flow_token", flowToken,
                         "flow_action_payload", Map.of("data", flowActionPayload.get("data"))
                     )
                 )
@@ -165,7 +172,7 @@ public class WhatsAppApiClient {
             .bodyToMono(Void.class);
     }
 
-    /**
+    /**F
      * 1) Decode the Base64 data URI, write to a temp PNG file.
      * 2) Build a MultiValueMap with keys "messaging_product", "type", and "file".
      * 3) POST multipart/form‐data to /media.
@@ -246,7 +253,7 @@ public class WhatsAppApiClient {
     /**
      * 2) Once uploadMediaFromBase64(...) yields a media_id, call /messages to send the image.
      */
-    public Mono<Void> sendImage(String to, String base64DataUri, String caption) {
+    public Mono<Void> uploadAndSendBase64Image(String to, String base64DataUri, String caption) {
         return uploadMedia(base64DataUri)
             .flatMap(mediaId -> {
                 Map<String, Object> imageObj = Map.of(

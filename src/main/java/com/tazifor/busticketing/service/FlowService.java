@@ -1,13 +1,13 @@
 package com.tazifor.busticketing.service;
 
-import com.tazifor.busticketing.client.WhatsAppApiClient;
 import com.tazifor.busticketing.dto.*;
 import com.tazifor.busticketing.dto.crypto.FlowEncryptedPayload;
 import com.tazifor.busticketing.model.BookingState;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tazifor.busticketing.model.Ticket;
+import com.tazifor.busticketing.model.TicketFactory;
 import com.tazifor.busticketing.service.screens.ScreenHandler;
 import com.tazifor.busticketing.util.encoding.BookingStateCodec;
-import com.tazifor.busticketing.util.ImageOverlayUtil;
 import com.tazifor.busticketing.util.StateDiffUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -30,9 +30,8 @@ public class FlowService {
 
     private final FlowEncryptionService encryptionService;
     private final Map<String, ScreenHandler>  screenHandlers;
-    private final WhatsAppApiClient apiClient;
     private final ObjectMapper objectMapper;
-    private final ImageOverlayUtil imageOverlayUtil;
+    private final TicketSendingService ticketSendingService;
 
     /**
      * Decrypts the incoming encrypted payload (FlowEncryptedPayload), runs flow logic, re‐encrypts the new state,
@@ -89,6 +88,7 @@ public class FlowService {
                     // Look up enum by req.getScreen() and invoke its handle(...)
                     String currentScreen = decryptedRequestPayload.getScreen();
                     logger.info("data_exchange for screen {}", currentScreen);
+                    logger.info("decryptedRequestPayload {}", decryptedRequestPayload);
 
                     if(StringUtils.hasLength(currentScreen) || !screenHandlers.containsKey(currentScreen)){
                         if (decryptedRequestPayload.getData().containsKey("error")) {
@@ -139,19 +139,10 @@ public class FlowService {
         logger.info("Plain Flow completed for token {} from {} with params {}", flowToken, from, finalParams);
 
         // Perform any business logic here (e.g. persist appointment to DB)
+        List<Ticket> tickets = TicketFactory.fromFinalParams(finalParams);
 
-        // (3) Generate the overlaid PNG as a Base64 string
-        List<String> chosenSeats = (List<String>) finalParams.getOrDefault("seat", List.of());
-        String overlaidBase64 = imageOverlayUtil.createImageWithHighlights(chosenSeats);
-
-        // Send a simple text confirmation (you could also send a template)
-        String confirmationText = "✅ Booking confirmed! Details: \n" + Screen.formatSummaryDataForFinalImageMessageCaption(finalParams);
-
-        apiClient.sendImage(from, overlaidBase64, confirmationText)
-            .subscribe(
-                __ -> logger.info("Sent final ticket image to {}", from),
-                err -> logger.error("Error sending final ticket image to {}: {}", from, err.getMessage())
-            );
+        // send tickets
+        ticketSendingService.sendAllTickets(from, tickets);
     }
 
 }

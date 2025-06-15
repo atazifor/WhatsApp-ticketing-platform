@@ -1,11 +1,11 @@
 package com.tazifor.busticketing.service.screens;
 
-import com.tazifor.busticketing.repository.ScheduleRepository;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.AgencySchedule;
 import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.service.ScheduleQueryService;
 import com.tazifor.busticketing.service.ui.TripScheduleCardBuilder;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.tazifor.busticketing.service.Screen.STEP_DISPLAY_RESULTS;
-import static com.tazifor.busticketing.service.Screen.extractList;
+import static com.tazifor.busticketing.util.BookingFormatter.extractList;
 import static org.springframework.util.StringUtils.capitalize;
 
 
@@ -25,8 +25,7 @@ import static org.springframework.util.StringUtils.capitalize;
 @RequiredArgsConstructor
 public class SelectFiltersHandler implements ScreenHandler {
     private final static Logger logger = LoggerFactory.getLogger(SelectFiltersHandler.class);
-
-    private final ScheduleRepository scheduleRepository;
+    private final ScheduleQueryService queryService;
     private final TripScheduleCardBuilder tripScheduleCardBuilder;
 
     @Override
@@ -50,7 +49,7 @@ public class SelectFiltersHandler implements ScreenHandler {
             .withSelectedAgencies(selectedAgencies);
 
         // Call filtering logic (mocked here)
-        List<AgencySchedule> schedules = scheduleRepository.findSchedules(origin, destination, date, selectedClasses, selectedAgencies, selectedTimes);
+        List<AgencySchedule> schedules = queryService.findSchedules(origin, destination, date, selectedClasses, selectedAgencies, selectedTimes);
         List<Map<String, Object>> matchingOptions = tripScheduleCardBuilder.build(schedules, date, newState);
 
 

@@ -1,27 +1,37 @@
 package com.tazifor.busticketing.service.screens;
 
+import com.tazifor.busticketing.config.AgencyConfig;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
-import com.tazifor.busticketing.dto.FlowResponsePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
+import com.tazifor.busticketing.model.AgencyContact;
 import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.service.BusLayoutService;
-import com.tazifor.busticketing.util.BeanUtil;
+import com.tazifor.busticketing.model.ScheduleDetails;
+import com.tazifor.busticketing.model.SeatingInfo;
+import com.tazifor.busticketing.service.AgencyMetadataService;
+import com.tazifor.busticketing.service.ScheduleQueryService;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.stream.IntStream;
 
-import static com.tazifor.busticketing.service.Screen.STEP_CHOOSE_SEAT;
+import static com.tazifor.busticketing.service.Screen.STEP_NUMBER_OF_TICKETS;
+import static org.springframework.util.StringUtils.capitalize;
 
 @Component("DISPLAY_RESULTS")
+@RequiredArgsConstructor
 public class DisplayResultsHandler implements ScreenHandler {
     private final static Logger LOGGER = LoggerFactory.getLogger(DisplayResultsHandler.class);
+
+    private final AgencyMetadataService agencyMetadataService;
+    private final ScheduleQueryService scheduleQueryService;
+
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
@@ -33,45 +43,67 @@ public class DisplayResultsHandler implements ScreenHandler {
             .withTravelClass(data.get("class").toString())
             .withAgency(data.get("agency").toString())
             .withPrice(data.get("price").toString())
-            .withStep(STEP_CHOOSE_SEAT);
+            .withStep(STEP_NUMBER_OF_TICKETS);
 
-        // 3) Fetch the cached bus image + seat coordinates from BusLayoutService
-        BusLayoutService layoutService = BeanUtil.getBean(BusLayoutService.class);
-        String busBase64 = layoutService.getBase64BusImage(); // “responseData:image/png;base64,…”
-        Map<String, Point> seatCoords = layoutService.getSeatCoordinates();
+        AgencyConfig agencyConfig = agencyMetadataService.getConfig(newState.getAgency());
+        int maxTicketsPerBooking = agencyConfig.maxTicketsPerBooking();
+        Optional<ScheduleDetails> optDetails = scheduleQueryService.findScheduleDetails(
+            newState.getAgency()
+            , newState.getOrigin()
+            , newState.getDestination()
+            , newState.getTravelClass()
+            , newState.getTime()
+        );
+        int unsold = Integer.MAX_VALUE;
 
-        if (busBase64 == null || seatCoords == null || seatCoords.isEmpty()) {
-            // If for some reason the service didn’t produce an image or any seats
-            Map<String,Object> err = Map.of(
-                "error_message", "🚧 Unable to load seat map right now."
-            );
-            return new ScreenHandlerResult(newState, new NextScreenResponsePayload(STEP_CHOOSE_SEAT, err));
+        if (optDetails.isPresent()) {
+            SeatingInfo seatingInfo = optDetails.get().seatingInfo();
+            unsold = seatingInfo.unsoldCount(newState.getTravelClass());
         }
 
-        // 4) Build the “seats” list dynamically from seatCoords.keySet()
-        //    Each entry is a Map: { "id": seatId, "title": seatId, "on-select-action": { … } }
-        List<Map<String,Object>> seats = seatCoords.keySet().stream()
-            .sorted() // optional: sort seat IDs lexicographically (A1, A2, A3, … B1, B2, …)
-            .map(seatId -> Map.<String,Object>of(
-                "id", seatId,
-                "title", seatId,
-                // on-select-action must have an empty payload so Flow doesn’t reject
-                "on-select-action", Map.of(
-                    "name",    "update_data",
-                    "enabled", true,
-                    "payload", Map.of()  // payload is intentionally empty
+        int numTicketsForDropdown = Math.min(unsold, maxTicketsPerBooking);
+
+        List<Map<String, String>> numberOfTicketsUi = IntStream.rangeClosed(1, numTicketsForDropdown)
+            .mapToObj(i ->
+                Map.of(
+                    "id", String.valueOf(i),
+                    "title", i + " Ticket" + (i > 1 ? "s" : "")
                 )
-            ))
-            .collect(Collectors.toList());
+            )
+            .toList();
+
+        Optional<AgencyContact> contactOpt = agencyMetadataService.getContact(newState.getAgency(), newState.getOrigin());
+
+        String thresholdText = getTicketsThresholdText(newState.getAgency(), agencyConfig.maxTicketsPerBooking(), contactOpt);
 
         // 4b) Put into a single responseData map
         Map<String, Object> fields = new LinkedHashMap<>();
-        fields.put("image", busBase64);
-        fields.put("seats", seats);
+        fields.put("number_of_tickets", numberOfTicketsUi);
+        fields.put("tickets_threshold_text", thresholdText);
 
 
         // 5) Return payload whose `responseData` matches your JSON layout’s placeholders
-        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_CHOOSE_SEAT, fields);
+        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_NUMBER_OF_TICKETS, fields);
         return new ScreenHandlerResult(newState, nextScreenResponsePayload);
+    }
+
+    public String getTicketsThresholdText(String agencyName, int maxPerBooking, Optional<AgencyContact> contactOpt) {
+        if (contactOpt.isPresent()) {
+            AgencyContact contact = contactOpt.get();
+            return String.format(
+                "For more than **%d** tickets, please contact **%s** at **%s**.\nLocation: _%s, %s_",
+                maxPerBooking,
+                agencyName,
+                contact.phone(),
+                contact.address(),
+                capitalize(contact.city())
+            );
+        } else {
+            return String.format(
+                "For more than **%d** tickets, please contact **%s** directly.",
+                maxPerBooking,
+                agencyName
+            );
+        }
     }
 }

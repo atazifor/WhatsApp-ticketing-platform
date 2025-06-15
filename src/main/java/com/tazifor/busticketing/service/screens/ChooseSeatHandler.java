@@ -6,6 +6,8 @@ import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
 import com.tazifor.busticketing.service.SeatService;
 import com.tazifor.busticketing.util.BeanUtil;
+import com.tazifor.busticketing.whatsapp.session.SessionContextStore;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -15,8 +17,12 @@ import java.util.*;
 import static com.tazifor.busticketing.service.Screen.STEP_PASSENGER_INFORMATION;
 
 @Component("CHOOSE_SEAT")
+@RequiredArgsConstructor
 public class ChooseSeatHandler implements ScreenHandler {
     private final static Logger logger = LoggerFactory.getLogger(ChooseSeatHandler.class);
+
+    private final SessionContextStore sessionContextStore;
+
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
@@ -35,8 +41,14 @@ public class ChooseSeatHandler implements ScreenHandler {
             seatService.markSeatTaken(payload.getFlow_token(), seat);
         });
 
+        String userWhatsAppPhoneNumber = sessionContextStore.getUserPhone(payload.getFlow_token()).orElse("");
 
-        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_PASSENGER_INFORMATION, Map.of());
+        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_PASSENGER_INFORMATION,
+            Map.of(
+                "user_wa_number", userWhatsAppPhoneNumber,
+                "current_passenger_index", Integer.parseInt(state.getNumTickets()) > 0 ? "1" : ""
+            )
+        );
         return new ScreenHandlerResult(newState, nextScreenResponsePayload);
     }
 }

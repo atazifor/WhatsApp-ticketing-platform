@@ -1,0 +1,1045 @@
+[
+  {
+    "name": "Parklane Travels",
+    "config": {
+      "maxTicketsPerBooking": 4,
+      "usesAssignedSeating": true
+    },
+    "schedules": [
+      {
+        "from": "Buea",
+        "to": "Douala",
+        "departureTime": "11:00",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Regular",
+            "price": 8000,
+            "seatCount": 6,
+            "sold": 2,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": true
+              },
+              {
+                "seatNumber": "3",
+                "isSold": false
+              },
+              {
+                "seatNumber": "4",
+                "isSold": false
+              },
+              {
+                "seatNumber": "5",
+                "isSold": false
+              },
+              {
+                "seatNumber": "6",
+                "isSold": false
+              }
+            ]
+          },
+          {
+            "className": "VIP",
+            "price": 10000,
+            "seatCount": 4,
+            "sold": 0,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": false
+              },
+              {
+                "seatNumber": "2",
+                "isSold": false
+              },
+              {
+                "seatNumber": "3",
+                "isSold": false
+              },
+              {
+                "seatNumber": "4",
+                "isSold": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "from": "Yaounde",
+        "to": "Buea",
+        "departureTime": "11:00",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "VIP",
+            "price": 10000,
+            "seatCount": 10,
+            "sold": 0,
+            "seats": []
+          }
+        ]
+      },
+      {
+        "from": "Buea",
+        "to": "Yaounde",
+        "departureTime": "15:00",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "VIP",
+            "price": 7000,
+            "seatCount": 10,
+            "sold": 8,
+            "seats": []
+          }
+        ]
+      },
+      {
+        "from": "Yaounde",
+        "to": "Douala",
+        "departureTime": "15:00",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "VIP",
+            "price": 10000,
+            "seatCount": 7,
+            "sold": 7,
+            "seats": []
+          },
+          {
+            "className": "Master Class",
+            "price": 8000,
+            "seatCount": 3,
+            "sold": 1,
+            "seats": []
+          }
+        ]
+      },
+      {
+        "from": "Douala",
+        "to": "Yaounde",
+        "departureTime": "11:00",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Master Class",
+            "price": 6000,
+            "seatCount": 10,
+            "sold": 0,
+            "seats": []
+          }
+        ]
+      },
+      {
+        "from": "Douala",
+        "to": "Buea",
+        "departureTime": "13:00",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Master Class",
+            "price": 7000,
+            "seatCount": 10,
+            "sold": 1,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": false
+              },
+              {
+                "seatNumber": "3",
+                "isSold": false
+              },
+              {
+                "seatNumber": "4",
+                "isSold": false
+              },
+              {
+                "seatNumber": "5",
+                "isSold": false
+              },
+              {
+                "seatNumber": "6",
+                "isSold": false
+              },
+              {
+                "seatNumber": "7",
+                "isSold": false
+              },
+              {
+                "seatNumber": "8",
+                "isSold": false
+              },
+              {
+                "seatNumber": "9",
+                "isSold": false
+              },
+              {
+                "seatNumber": "10",
+                "isSold": false
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "contacts": [
+      {
+        "city": "Douala",
+        "phone": "+237 658 18 22 69",
+        "address": "Main agency office near Douala bus terminal"
+      },
+      {
+        "city": "Yaounde",
+        "phone": "+237 681 90 95 51",
+        "address": "Main agency office near Yaounde bus terminal"
+      },
+      {
+        "city": "Buea",
+        "phone": "+237 697 39 75 88",
+        "address": "Main agency office near Buea bus terminal"
+      }
+    ]
+  },
+  {
+    "name": "Touristique Express",
+    "config": {
+      "maxTicketsPerBooking": 4,
+      "usesAssignedSeating": false
+    },
+    "schedules": [
+      {
+        "from": "Yaounde",
+        "to": "Ngoundere",
+        "departureTime": "17:30",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "VIP",
+            "price": 8000,
+            "seatCount": 10,
+            "sold": 1,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": false
+              },
+              {
+                "seatNumber": "3",
+                "isSold": false
+              },
+              {
+                "seatNumber": "4",
+                "isSold": false
+              },
+              {
+                "seatNumber": "5",
+                "isSold": false
+              },
+              {
+                "seatNumber": "6",
+                "isSold": false
+              },
+              {
+                "seatNumber": "7",
+                "isSold": false
+              },
+              {
+                "seatNumber": "8",
+                "isSold": false
+              },
+              {
+                "seatNumber": "9",
+                "isSold": false
+              },
+              {
+                "seatNumber": "10",
+                "isSold": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "from": "Douala",
+        "to": "Yaounde",
+        "departureTime": "09:30",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Regular",
+            "price": 6000,
+            "seatCount": 10,
+            "sold": 7,
+            "seats": []
+          }
+        ]
+      },
+      {
+        "from": "Douala",
+        "to": "Ngoundere",
+        "departureTime": "17:30",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Regular",
+            "price": 7000,
+            "seatCount": 8,
+            "sold": 0,
+            "seats": []
+          },
+          {
+            "className": "Master Class",
+            "price": 10000,
+            "seatCount": 2,
+            "sold": 2,
+            "seats": []
+          }
+        ]
+      },
+      {
+        "from": "Yaounde",
+        "to": "Douala",
+        "departureTime": "17:30",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "VIP",
+            "price": 7000,
+            "seatCount": 10,
+            "sold": 2,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": true
+              },
+              {
+                "seatNumber": "3",
+                "isSold": false
+              },
+              {
+                "seatNumber": "4",
+                "isSold": false
+              },
+              {
+                "seatNumber": "5",
+                "isSold": false
+              },
+              {
+                "seatNumber": "6",
+                "isSold": false
+              },
+              {
+                "seatNumber": "7",
+                "isSold": false
+              },
+              {
+                "seatNumber": "8",
+                "isSold": false
+              },
+              {
+                "seatNumber": "9",
+                "isSold": false
+              },
+              {
+                "seatNumber": "10",
+                "isSold": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "from": "Ngoundere",
+        "to": "Douala",
+        "departureTime": "08:30",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Regular",
+            "price": 8000,
+            "seatCount": 8,
+            "sold": 7,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": true
+              },
+              {
+                "seatNumber": "3",
+                "isSold": true
+              },
+              {
+                "seatNumber": "4",
+                "isSold": true
+              },
+              {
+                "seatNumber": "5",
+                "isSold": true
+              },
+              {
+                "seatNumber": "6",
+                "isSold": true
+              },
+              {
+                "seatNumber": "7",
+                "isSold": true
+              },
+              {
+                "seatNumber": "8",
+                "isSold": false
+              }
+            ]
+          },
+          {
+            "className": "Master Class",
+            "price": 8000,
+            "seatCount": 2,
+            "sold": 2,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "from": "Ngoundere",
+        "to": "Yaounde",
+        "departureTime": "08:30",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "VIP",
+            "price": 8000,
+            "seatCount": 5,
+            "sold": 3,
+            "seats": []
+          },
+          {
+            "className": "Master Class",
+            "price": 7000,
+            "seatCount": 5,
+            "sold": 3,
+            "seats": []
+          }
+        ]
+      }
+    ],
+    "contacts": [
+      {
+        "city": "Douala",
+        "phone": "+237 677 10 54 38",
+        "address": "Main agency office near Douala bus terminal"
+      },
+      {
+        "city": "Yaounde",
+        "phone": "+237 684 11 46 25",
+        "address": "Main agency office near Yaounde bus terminal"
+      },
+      {
+        "city": "Ngoundere",
+        "phone": "+237 665 92 27 29",
+        "address": "Main agency office near Ngoundere bus terminal"
+      }
+    ]
+  },
+  {
+    "name": "Global Express",
+    "config": {
+      "maxTicketsPerBooking": 4,
+      "usesAssignedSeating": false
+    },
+    "schedules": [
+      {
+        "from": "Yaounde",
+        "to": "Douala",
+        "departureTime": "11:00",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Master Class",
+            "price": 6000,
+            "seatCount": 10,
+            "sold": 3,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": true
+              },
+              {
+                "seatNumber": "3",
+                "isSold": true
+              },
+              {
+                "seatNumber": "4",
+                "isSold": false
+              },
+              {
+                "seatNumber": "5",
+                "isSold": false
+              },
+              {
+                "seatNumber": "6",
+                "isSold": false
+              },
+              {
+                "seatNumber": "7",
+                "isSold": false
+              },
+              {
+                "seatNumber": "8",
+                "isSold": false
+              },
+              {
+                "seatNumber": "9",
+                "isSold": false
+              },
+              {
+                "seatNumber": "10",
+                "isSold": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "from": "Bafoussam",
+        "to": "Yaounde",
+        "departureTime": "15:00",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "VIP",
+            "price": 6000,
+            "seatCount": 10,
+            "sold": 0,
+            "seats": []
+          }
+        ]
+      },
+      {
+        "from": "Yaounde",
+        "to": "Bafoussam",
+        "departureTime": "15:00",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Master Class",
+            "price": 10000,
+            "seatCount": 3,
+            "sold": 3,
+            "seats": []
+          },
+          {
+            "className": "Regular",
+            "price": 10000,
+            "seatCount": 7,
+            "sold": 5,
+            "seats": []
+          }
+        ]
+      },
+      {
+        "from": "Douala",
+        "to": "Yaounde",
+        "departureTime": "09:30",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Regular",
+            "price": 6000,
+            "seatCount": 10,
+            "sold": 3,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": true
+              },
+              {
+                "seatNumber": "3",
+                "isSold": true
+              },
+              {
+                "seatNumber": "4",
+                "isSold": false
+              },
+              {
+                "seatNumber": "5",
+                "isSold": false
+              },
+              {
+                "seatNumber": "6",
+                "isSold": false
+              },
+              {
+                "seatNumber": "7",
+                "isSold": false
+              },
+              {
+                "seatNumber": "8",
+                "isSold": false
+              },
+              {
+                "seatNumber": "9",
+                "isSold": false
+              },
+              {
+                "seatNumber": "10",
+                "isSold": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "from": "Bafoussam",
+        "to": "Douala",
+        "departureTime": "09:30",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Regular",
+            "price": 10000,
+            "seatCount": 10,
+            "sold": 5,
+            "seats": []
+          }
+        ]
+      },
+      {
+        "from": "Douala",
+        "to": "Bafoussam",
+        "departureTime": "13:00",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "VIP",
+            "price": 10000,
+            "seatCount": 6,
+            "sold": 4,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": true
+              },
+              {
+                "seatNumber": "3",
+                "isSold": true
+              },
+              {
+                "seatNumber": "4",
+                "isSold": true
+              },
+              {
+                "seatNumber": "5",
+                "isSold": false
+              },
+              {
+                "seatNumber": "6",
+                "isSold": false
+              }
+            ]
+          },
+          {
+            "className": "Regular",
+            "price": 8000,
+            "seatCount": 4,
+            "sold": 1,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": false
+              },
+              {
+                "seatNumber": "3",
+                "isSold": false
+              },
+              {
+                "seatNumber": "4",
+                "isSold": false
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "contacts": [
+      {
+        "city": "Douala",
+        "phone": "+237 689 59 72 13",
+        "address": "Main agency office near Douala bus terminal"
+      },
+      {
+        "city": "Yaounde",
+        "phone": "+237 685 77 46 83",
+        "address": "Main agency office near Yaounde bus terminal"
+      },
+      {
+        "city": "Bafoussam",
+        "phone": "+237 654 66 94 40",
+        "address": "Main agency office near Bafoussam bus terminal"
+      }
+    ]
+  },
+  {
+    "name": "Men Travel",
+    "config": {
+      "maxTicketsPerBooking": 2,
+      "usesAssignedSeating": true
+    },
+    "schedules": [
+      {
+        "from": "Douala",
+        "to": "Yaounde",
+        "departureTime": "13:00",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "VIP",
+            "price": 8000,
+            "seatCount": 10,
+            "sold": 7,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": true
+              },
+              {
+                "seatNumber": "3",
+                "isSold": true
+              },
+              {
+                "seatNumber": "4",
+                "isSold": true
+              },
+              {
+                "seatNumber": "5",
+                "isSold": true
+              },
+              {
+                "seatNumber": "6",
+                "isSold": true
+              },
+              {
+                "seatNumber": "7",
+                "isSold": true
+              },
+              {
+                "seatNumber": "8",
+                "isSold": false
+              },
+              {
+                "seatNumber": "9",
+                "isSold": false
+              },
+              {
+                "seatNumber": "10",
+                "isSold": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "from": "Yaounde",
+        "to": "Douala",
+        "departureTime": "15:00",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Regular",
+            "price": 7000,
+            "seatCount": 10,
+            "sold": 10,
+            "seats": []
+          }
+        ]
+      }
+    ],
+    "contacts": [
+      {
+        "city": "Douala",
+        "phone": "+237 665 27 64 34",
+        "address": "Main agency office near Douala bus terminal"
+      },
+      {
+        "city": "Yaounde",
+        "phone": "+237 671 47 85 61",
+        "address": "Main agency office near Yaounde bus terminal"
+      }
+    ]
+  },
+  {
+    "name": "Nso Boys",
+    "config": {
+      "maxTicketsPerBooking": 4,
+      "usesAssignedSeating": true
+    },
+    "schedules": [
+      {
+        "from": "Bamenda",
+        "to": "Yaounde",
+        "departureTime": "15:00",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Master Class",
+            "price": 8000,
+            "seatCount": 10,
+            "sold": 5,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": true
+              },
+              {
+                "seatNumber": "3",
+                "isSold": true
+              },
+              {
+                "seatNumber": "4",
+                "isSold": true
+              },
+              {
+                "seatNumber": "5",
+                "isSold": true
+              },
+              {
+                "seatNumber": "6",
+                "isSold": false
+              },
+              {
+                "seatNumber": "7",
+                "isSold": false
+              },
+              {
+                "seatNumber": "8",
+                "isSold": false
+              },
+              {
+                "seatNumber": "9",
+                "isSold": false
+              },
+              {
+                "seatNumber": "10",
+                "isSold": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "from": "Yaounde",
+        "to": "Bamenda",
+        "departureTime": "13:00",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Master Class",
+            "price": 6000,
+            "seatCount": 10,
+            "sold": 10,
+            "seats": []
+          }
+        ]
+      }
+    ],
+    "contacts": [
+      {
+        "city": "Bamenda",
+        "phone": "+237 691 50 43 84",
+        "address": "Main agency office near Bamenda bus terminal"
+      },
+      {
+        "city": "Yaounde",
+        "phone": "+237 658 52 89 63",
+        "address": "Main agency office near Yaounde bus terminal"
+      }
+    ]
+  },
+  {
+    "name": "Moghamo",
+    "config": {
+      "maxTicketsPerBooking": 2,
+      "usesAssignedSeating": true
+    },
+    "schedules": [
+      {
+        "from": "Yaounde",
+        "to": "Buea",
+        "departureTime": "08:30",
+        "openSeating": false,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Regular",
+            "price": 8000,
+            "seatCount": 5,
+            "sold": 4,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": true
+              },
+              {
+                "seatNumber": "3",
+                "isSold": true
+              },
+              {
+                "seatNumber": "4",
+                "isSold": true
+              },
+              {
+                "seatNumber": "5",
+                "isSold": false
+              }
+            ]
+          },
+          {
+            "className": "Master Class",
+            "price": 10000,
+            "seatCount": 5,
+            "sold": 1,
+            "seats": [
+              {
+                "seatNumber": "1",
+                "isSold": true
+              },
+              {
+                "seatNumber": "2",
+                "isSold": false
+              },
+              {
+                "seatNumber": "3",
+                "isSold": false
+              },
+              {
+                "seatNumber": "4",
+                "isSold": false
+              },
+              {
+                "seatNumber": "5",
+                "isSold": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "from": "Buea",
+        "to": "Yaounde",
+        "departureTime": "06:00",
+        "openSeating": true,
+        "totalSeats": 10,
+        "seatClasses": [
+          {
+            "className": "Regular",
+            "price": 10000,
+            "seatCount": 6,
+            "sold": 0,
+            "seats": []
+          },
+          {
+            "className": "Master Class",
+            "price": 8000,
+            "seatCount": 4,
+            "sold": 1,
+            "seats": []
+          }
+        ]
+      }
+    ],
+    "contacts": [
+      {
+        "city": "Buea",
+        "phone": "+237 694 79 96 76",
+        "address": "Main agency office near Buea bus terminal"
+      },
+      {
+        "city": "Yaounde",
+        "phone": "+237 663 52 57 64",
+        "address": "Main agency office near Yaounde bus terminal"
+      }
+    ]
+  }
+]

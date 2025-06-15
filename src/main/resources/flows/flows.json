@@ -10,7 +10,8 @@
     "CHOOSE_TIME": ["SELECT_FILTERS", "GENERIC_ERROR"],
     "SELECT_FILTERS": ["DISPLAY_RESULTS", "GENERIC_ERROR"],
     "NO_DISPLAY_RESULTS": ["SELECT_FILTERS"],
-    "DISPLAY_RESULTS": ["CHOOSE_SEAT", "NO_DISPLAY_RESULTS", "GENERIC_ERROR"],
+    "DISPLAY_RESULTS": ["NUMBER_OF_TICKETS", "NO_DISPLAY_RESULTS", "GENERIC_ERROR"],
+    "NUMBER_OF_TICKETS": ["CHOOSE_SEAT", "PASSENGER_INFO", "GENERIC_ERROR"],
     "CHOOSE_SEAT": ["PASSENGER_INFO", "GENERIC_ERROR"],
     "PASSENGER_INFO": ["SUMMARY", "GENERIC_ERROR"],
     "SUMMARY": ["TERMS", "GENERIC_ERROR"],
@@ -614,6 +615,71 @@
     },
 
     {
+      "id": "NUMBER_OF_TICKETS",
+      "title": "Number of Tickets",
+      "data": {
+        "tickets_threshold_text": {
+          "type": "string",
+          "__example__": "Please call the agency if you need to purchase more"
+        },
+        "number_of_tickets":{
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type":"string"
+              },
+              "title": {
+                "type":"string"
+              }
+            }
+          },
+          "__example__": [
+            { "id":"1", "title": "1 Ticket"},
+            { "id":"2", "title": "2 Tickets"},
+            { "id":"3", "title": "3 Tickets"}
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "number_of_tickets_form",
+            "children": [
+              {
+                "type": "RadioButtonsGroup",
+                "required":true,
+                "label": "How many tickets do you need?",
+                "name": "number_of_tickets",
+                "data-source": "${data.number_of_tickets}"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.tickets_threshold_text}",
+                "markdown": true
+              },
+              {
+                "type": "Footer",
+                "label": "Continue →",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "screen": "NUMBER_OF_TICKETS",
+                    "number_of_tickets": "${form.number_of_tickets}",
+                    "_state":"${data._state}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
       "id": "NO_DISPLAY_RESULTS",
       "title": "No Trips Found",
       "data": {
@@ -678,6 +744,10 @@
           "type": "string",
           "__example__": "iVBORw0KGgoAAAANSUhEUgAA"
         },
+        "maxSelectable": {
+          "type": "number",
+          "__example__": 2
+        },
         "seats": {
           "type": "array",
           "items": {
@@ -707,8 +777,8 @@
           {
             "type": "Image",
             "src": "${data.image}",
-            "width": 300,
-            "height": 300
+            "width": 200,
+            "height": 200
           },
           {
             "type": "Form",
@@ -719,6 +789,7 @@
                 "name": "seat",
                 "label": "Available Seats",
                 "data-source": "${data.seats}",
+                "max-selected-items": "${data.maxSelectable}",
                 "required": true
               },
               {
@@ -741,14 +812,16 @@
 
     {
       "id": "PASSENGER_INFO",
-      "title": "👤 Passenger Details",
+      "title": "Passenger Details",
       "data": {
+        "current_passenger_index": { "type": "string", "__example__": "2" },
         "origin": { "type": "string", "__example__": "Yaounde" },
         "destination": { "type": "string", "__example__": "Douala" },
         "date": { "type": "string", "__example__": "2025-06-10" },
         "time": { "type": "string", "__example__": "10:00" },
         "agency": { "type": "string", "__example__": "Men Travel" },
         "class": { "type": "string", "__example__": "VIP" },
+        "user_wa_number": { "type": "string", "__example__": "679889034" },
         "seat": {
           "type": "array",
           "items": { "type": "string" },
@@ -759,59 +832,54 @@
         "type": "SingleColumnLayout",
         "children": [
           {
-            "type": "Form",
-            "name": "passenger_form",
-            "children": [
-              {
-                "type": "TextInput",
-                "label": "Full Name",
-                "name": "full_name",
-                "required": true
-              },
-              {
-                "type": "TextInput",
-                "label": "Email",
-                "name": "email",
-                "input-type": "email",
-                "required": true
-              },
-              {
-                "type": "TextInput",
-                "label": "Phone Number",
-                "name": "phone",
-                "input-type": "phone",
-                "required": true
-              },
-              {
-                "type": "TextInput",
-                "label": "Number of Tickets",
-                "name": "num_tickets",
-                "input-type": "number",
-                "required": true
-              },
-              {
-                "type": "TextInput",
-                "label": "Extra Notes",
-                "name": "more_details"
-              },
-              {
-                "type": "Footer",
-                "label": "Next →",
-                "on-click-action": {
-                  "name": "data_exchange",
-                  "payload": {
-                    "screen": "PASSENGER_INFO",
-                    "full_name": "${form.full_name}",
-                    "email": "${form.email}",
-                    "phone": "${form.phone}",
-                    "num_tickets": "${form.num_tickets}",
-                    "more_details": "${form.more_details}",
-                    "_state":"${data._state}"
-                  }
-                }
+            "type": "TextBody",
+            "markdown": true,
+            "text": "`'Information for Passenger ' ${data.current_passenger_index}`"
+          },
+          {
+            "type": "TextInput",
+            "label": "Full Name",
+            "name": "full_name",
+            "required": true,
+            "helper-text": "As it appears on your ID or Passport"
+          },
+          {
+            "type": "TextInput",
+            "label": "Email",
+            "name": "email",
+            "input-type": "email",
+            "required": false
+          },
+          {
+            "type": "TextInput",
+            "label": "Phone Number",
+            "name": "phone",
+            "input-type": "phone",
+            "required": "`(${data.current_passenger_index} == '') || (${data.current_passenger_index} == '0') || (${data.current_passenger_index} == '1')`",
+            "init-value":"${data.user_wa_number}"
+          },
+          {
+            "type": "TextArea",
+            "label": "Extra Notes",
+            "name": "more_details",
+            "helper-text": "Anything you may want us to know"
+          },
+          {
+            "type": "Footer",
+            "label": "Next →",
+            "on-click-action": {
+              "name": "data_exchange",
+              "payload": {
+                "screen": "PASSENGER_INFO",
+                "full_name": "${form.full_name}",
+                "email": "${form.email}",
+                "phone": "${form.phone}",
+                "more_details": "${form.more_details}",
+                "_state":"${data._state}"
               }
-            ]
+            }
           }
+
         ]
       }
     },

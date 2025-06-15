@@ -4,12 +4,13 @@ import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.model.Passenger;
+import com.tazifor.busticketing.util.BookingFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 import static com.tazifor.busticketing.service.Screen.*;
 
@@ -20,31 +21,47 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
                                                   BookingState state) {
-        logger.info("Passenger info screen handler called data {}", payload.getData());
 
         Map<String, Object> data = payload.getData();
-        String fullName   = data.get("full_name").toString();
-        String email      = data.get("email").toString();
-        String phone      = data.get("phone").toString();
-        String numTickets = data.get("num_tickets").toString();
+        String fullName = data.get("full_name").toString();
+        String email = Optional.ofNullable(data.get("email"))
+            .map(Object::toString)
+            .orElse("");
+        String phone = Optional.ofNullable(data.get("phone"))
+            .map(Object::toString)
+            .orElse("");
+
+        // Deserialize or init list
+        List<Passenger> passengerList = state.getPassengerList() != null
+            ? new ArrayList<>(state.getPassengerList())
+            : new ArrayList<>();
+        passengerList.add(new Passenger(fullName, email, phone));
+
         String moreDetails= data.getOrDefault("more_details", "").toString();
+
+        int totalTickets = Integer.parseInt(state.getNumTickets());
+        boolean isLastPassenger = passengerList.size() >= totalTickets;
 
         // Update state
         BookingState newState = state
-            .withFullName(fullName)
-            .withEmail(email)
-            .withPhone(phone)
-            .withNumTickets(numTickets)
             .withMoreDetails(moreDetails)
-            .withStep(STEP_SUMMARY);
+            .withPassengerList(passengerList)
+            .withStep(isLastPassenger ? STEP_SUMMARY : STEP_PASSENGER_INFORMATION);
 
-        // Build SUMMARY screen data
-        Map<String, Object> summaryData = new LinkedHashMap<>();
-        String summary = buildSummaryText(newState);
-        summaryData.put("summary_text", summary);
+        Map<String, Object> nextData = new LinkedHashMap<>();
+        if(isLastPassenger) {
+            // Build SUMMARY screen data
+            String summary = BookingFormatter.buildSummaryText(newState);
+            nextData.put("summary_text", summary);
 
-        NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_SUMMARY, summaryData);
-        return new ScreenHandlerResult(newState, nextScreenResponsePayload);
+            NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload(STEP_SUMMARY, nextData);
+            return new ScreenHandlerResult(newState, nextScreenResponsePayload);
+        }else {
+            nextData.put("current_passenger_index", passengerList.size() + 1+"");
+            nextData.put("full_name", "");
+            return new ScreenHandlerResult(newState,
+                new NextScreenResponsePayload(STEP_PASSENGER_INFORMATION, nextData));
+        }
 
     }
 }
