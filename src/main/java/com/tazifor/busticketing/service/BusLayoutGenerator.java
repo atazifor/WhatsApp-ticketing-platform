@@ -1,6 +1,7 @@
 package com.tazifor.busticketing.service;
 
 import com.tazifor.busticketing.config.properties.BusLayoutConfig;
+import com.tazifor.busticketing.config.properties.FontConfig;
 import com.tazifor.busticketing.model.BusLayoutCellType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,10 +20,13 @@ import java.util.Map;
 @Component
 public class BusLayoutGenerator {
     private static final Logger log = LoggerFactory.getLogger(BusLayoutGenerator.class);
-    private final BusLayoutConfig cfg;
 
-    public BusLayoutGenerator(BusLayoutConfig cfg) {
+    private final BusLayoutConfig cfg;
+    private final FontConfig fontCfg;
+
+    public BusLayoutGenerator(BusLayoutConfig cfg, FontConfig fontCfg) {
         this.cfg = cfg;
+        this.fontCfg = fontCfg;
     }
 
     public GenerationResult generateLayout() {
@@ -114,11 +118,11 @@ public class BusLayoutGenerator {
             case DRIVER -> drawDriver(g, x, y, seatSize, driverH);
             case ENTRANCE -> drawEntrance(g, x, y, seatSize, driverH);
             case SEAT -> {
-                g.setColor(Color.WHITE);
-                g.fillRect(x, y, seatSize, seatSize);
-                g.setColor(Color.BLACK);
-                g.drawRect(x, y, seatSize, seatSize);
-                drawSeatLabel(g, cellId, x, y, seatSize);
+                if ("emoji".equalsIgnoreCase(cfg.seatStyle())) {
+                    drawEmojiSeat(g, seatNum.toString(), x, y, seatSize);
+                } else {
+                    drawRectSeat(g, seatNum.toString(), x, y, seatSize);
+                }
                 seatCenterMap.put(cellId, new Point(x + seatSize / 2, y + seatSize / 2));
                 seatBoundsMap.put(cellId, new Rectangle(x, y, seatSize, seatSize));
             }
@@ -133,8 +137,7 @@ public class BusLayoutGenerator {
     }
 
     private void drawSeatLabel(Graphics2D g, String label, int x, int y, int size) {
-        Font seatFont = new Font("SansSerif", Font.BOLD, 14);
-        g.setFont(seatFont);
+        g.setFont(fontCfg.seatFont());
         FontMetrics fm = g.getFontMetrics();
         int textWidth = fm.stringWidth(label);
         int textX = x + (size - textWidth) / 2;
@@ -143,41 +146,84 @@ public class BusLayoutGenerator {
         g.drawString(label, textX, textY);
     }
 
-    private void drawDriver(Graphics2D g, int x, int y, int seatSize, int driverH) {
+    private void drawDriver(Graphics2D g, int x, int y, int w, int h) {
         g.setColor(new Color(200, 230, 255));
-        g.fillRect(x, y, seatSize, driverH);
+        g.fillRect(x, y, w, h);
         g.setColor(Color.BLACK);
-        g.drawRect(x, y, seatSize, driverH);
-        g.setFont(new Font("SansSerif", Font.BOLD, 16));
-        FontMetrics fm = g.getFontMetrics();
-        String label = "Driver";
-        g.drawString(label, x + (seatSize - fm.stringWidth(label)) / 2,
-            y + (driverH + fm.getAscent()) / 2 - 4);
+        g.drawRect(x, y, w, h);
+
+        drawIconLabel(g, "\uD83D\uDC68\u200D", x, y, w, h); // 👨‍✈️
     }
 
-    private void drawEntrance(Graphics2D g, int x, int y, int seatSize, int driverH) {
+    private void drawEntrance(Graphics2D g, int x, int y, int w, int h) {
         g.setColor(new Color(200, 255, 200));
-        g.fillRect(x, y, seatSize, driverH);
+        g.fillRect(x, y, w, h);
         g.setColor(Color.BLACK);
-        g.drawRect(x, y, seatSize, driverH);
-        g.setFont(new Font("SansSerif", Font.BOLD, 16));
-        FontMetrics fm = g.getFontMetrics();
-        String label = "Entrance";
-        g.drawString(label, x + (seatSize - fm.stringWidth(label)) / 2,
-            y + (driverH + fm.getAscent()) / 2 - 4);
+        g.drawRect(x, y, w, h);
+
+        drawIconLabel(g, "\uD83D\uDEAA", x, y, w, h); //
     }
 
-    private void drawToilet(Graphics2D g, int x, int y, int toiletSize) {
+    private void drawToilet(Graphics2D g, int x, int y, int size) {
         g.setColor(new Color(255, 230, 230));
-        g.fillRect(x, y, toiletSize, toiletSize);
+        g.fillRect(x, y, size, size);
         g.setColor(Color.BLACK);
-        g.drawRect(x, y, toiletSize, toiletSize);
-        g.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        FontMetrics fm = g.getFontMetrics();
-        String label = "Toilet";
-        g.drawString(label, x + (toiletSize - fm.stringWidth(label)) / 2,
-            y + (toiletSize + fm.getAscent()) / 2 - 4);
+        g.drawRect(x, y, size, size);
+
+        drawIconLabel(g, "\uD83D\uDEBB", x, y, size, size); // 🚽 or 🚻
     }
+
+    private void drawIconLabel(Graphics2D g, String emoji, int x, int y, int w, int h) {
+        int boost = (int)(fontCfg.driverLabelSize() * 1.5);
+        Font emojiFont = new Font("SansSerif", Font.PLAIN, boost);
+        g.setFont(emojiFont);
+        FontMetrics fm = g.getFontMetrics();
+
+        int textWidth = fm.stringWidth(emoji);
+        int textX = x + (w - textWidth) / 2;
+        int textY = y + (h + fm.getAscent()) / 2 - 4;
+
+        g.setColor(Color.BLACK);
+        g.drawString(emoji, textX, textY);
+    }
+
+    private void drawRectSeat(Graphics2D g, String label, int x, int y, int size) {
+        g.setColor(Color.WHITE);
+        g.fillRect(x, y, size, size);
+        g.setColor(Color.BLACK);
+        g.drawRect(x, y, size, size);
+        drawSeatLabel(g, label, x, y, size);
+    }
+
+    private void drawEmojiSeat(Graphics2D g, String label, int x, int y, int size) {
+        // 1. Draw the seat number (label) first
+        Font labelFont = new Font("SansSerif", Font.BOLD, (int)(size * 0.35));
+        g.setFont(labelFont);
+        FontMetrics labelFm = g.getFontMetrics();
+
+        int labelWidth = labelFm.stringWidth(label);
+        int labelX = x + (size - labelWidth) / 2;
+        int labelY = y + labelFm.getAscent(); // near top
+
+        g.setColor(Color.BLACK);
+        g.drawString(label, labelX, labelY);
+
+        // 2. Draw the emoji below the number
+        Font emojiFont = new Font("SansSerif", Font.PLAIN, (int)(size * 0.6));
+        g.setFont(emojiFont);
+        FontMetrics emojiFm = g.getFontMetrics();
+
+        int emojiWidth = emojiFm.stringWidth("💺");
+        int emojiX = x + (size - emojiWidth) / 2;
+
+        // Position emoji ~halfway below label baseline
+        int emojiY = y + (int)(size * 0.75);
+
+        g.drawString("💺", emojiX, emojiY);
+    }
+
+
+
 
     /** Holds the generated image and lookup maps */
     public record GenerationResult(

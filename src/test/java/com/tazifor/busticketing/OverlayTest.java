@@ -4,7 +4,6 @@ import com.tazifor.busticketing.util.ImageOverlayUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,7 +21,7 @@ public class OverlayTest {
     @Test
     public void testOverlay() throws IOException {
         // 2. Generate availability overlay (pass some sample available seats)
-        Set<String> available = Set.of("B1", "B2", "B5");
+        Set<String> available = Set.of("1", "2", "5");
         String b64 = util.createAvailabilityOverlay(available);
 
         // 3. Strip "data:image/png;base64," and decode

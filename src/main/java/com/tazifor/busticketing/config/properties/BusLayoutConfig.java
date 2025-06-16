@@ -25,6 +25,7 @@ public record BusLayoutConfig (
     int padding,
     int driverAreaHeight,
     int labelHeight,
+    String seatStyle,
 
     /**
      * A 2D list of length = rows. Each inner list must have length = colsLeft + colsRight.

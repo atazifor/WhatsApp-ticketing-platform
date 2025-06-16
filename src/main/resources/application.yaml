@@ -27,6 +27,11 @@ seating:
 
 bus:
   layout:
+    font:
+      seat-label-size: 14
+      driver-label-size: 16
+      toilet-label-size: 14
+      legend-label-size: 14
     # ───────── Numeric parameters ─────────
     rows:              5      # now 5 “rows” including driver row
     cols-left:         2      # how many “left-block” cells per row

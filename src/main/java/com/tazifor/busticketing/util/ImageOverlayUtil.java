@@ -1,5 +1,6 @@
 package com.tazifor.busticketing.util;
 
+import com.tazifor.busticketing.config.properties.FontConfig;
 import com.tazifor.busticketing.service.BusLayoutService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,8 @@ public class ImageOverlayUtil {
 
     /** Cached seat boundary→ (x,y) map */
     private Map<String, Rectangle> seatBounds;
+
+    private final FontConfig fontConfig;
 
 
     @PostConstruct
@@ -87,16 +90,41 @@ public class ImageOverlayUtil {
      * @return "base64, …" new PNG string
      */
     public String createImageWithHighlights(List<String> selectedSeats) {
-        BufferedImage copy = getBaseCopy();
-        Graphics2D g = copy.createGraphics();
+        Font font = fontConfig.legendFont();
+        BufferedImage base = getBaseCopy();
+        Graphics2D baseG = base.createGraphics();
+        baseG.setFont(font);
+        FontMetrics fm = baseG.getFontMetrics();
+        baseG.dispose();
 
+        int fontHeight = fm.getHeight();
+        int boxSize = fontHeight;
+        int pad = fontHeight / 2;
+        int gap = fontHeight / 3;
+        int legendHeight = (boxSize + gap) * 1 + pad * 2; // only 1 legend item ("Selected")
+
+        // Create a new image taller than the base image
+        BufferedImage extended = new BufferedImage(base.getWidth(), base.getHeight() + legendHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = extended.createGraphics();
+
+        // Draw the base image
+        g.drawImage(base, 0, 0, null);
+
+        // Draw overlays on seats
         Color selC = new Color(255, 0, 0, 128);
         selectedSeats.forEach(id -> fillSeatWithColor(g, id, selC));
 
+        // Adjust Y position for legend
+        int yLegendStart = base.getHeight(); // start right after original image
+        g.translate(0, yLegendStart);
+
+        // Draw legend below
         addLegend(g, Map.of("Selected", new Color(255, 0, 0, 180)));
+
         g.dispose();
-        return encodeToBase64(copy);
+        return encodeToBase64(extended);
     }
+
 
     /* clones the base layout image and returns it as a BufferedImage.*/
     private BufferedImage getBaseCopy() {
@@ -117,19 +145,49 @@ public class ImageOverlayUtil {
     }
     /* draws your seat color legend in the bottom-left.*/
     private void addLegend(Graphics2D g, Map<String, Color> legendItems) {
-        int pad = 10, boxSize = 15;
-        int x = pad, y = baseImage.getHeight() - legendItems.size() * (boxSize + 5) - pad;
-        g.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        // Set the font and metrics
+        Font font = fontConfig.legendFont();  // Externalized from application.yml
+        g.setFont(font);
+        FontMetrics fm = g.getFontMetrics();
 
+        // Dynamically scale everything based on font height
+        int fontHeight = fm.getHeight();
+        int boxSize = fontHeight;
+        int pad = fontHeight / 2;
+        int gap = fontHeight / 3;
+
+        // Calculate max text width across legend labels
+        int maxLabelWidth = legendItems.keySet().stream()
+            .mapToInt(fm::stringWidth)
+            .max().orElse(0);
+
+        // Width = color box + space + label
+        int legendWidth = boxSize + pad + maxLabelWidth;
+        int legendHeight = legendItems.size() * (boxSize + gap);
+
+        // Calculate bottom of actual seat layout to avoid overlap
+        int maxSeatBottom = seatBounds.values().stream()
+            .mapToInt(rect -> rect.y + rect.height)
+            .max().orElse(0);
+
+        int x = pad;
+        int y = maxSeatBottom + pad;
+
+        // Optional: semi-transparent background
+        g.setColor(new Color(255, 255, 255, 200));
+        g.fillRoundRect(x - pad, y - pad, legendWidth + pad * 2, legendHeight + pad * 2, pad, pad);
+
+        // Now draw each legend entry
         for (Map.Entry<String, Color> entry : legendItems.entrySet()) {
             g.setColor(entry.getValue());
             g.fillRect(x, y, boxSize, boxSize);
             g.setColor(Color.BLACK);
             g.drawRect(x, y, boxSize, boxSize);
-            g.drawString(entry.getKey(), x + boxSize + 5, y + boxSize - 3);
-            y += boxSize + 5;
+            g.drawString(entry.getKey(), x + boxSize + pad, y + boxSize - gap);
+            y += boxSize + gap;
         }
     }
+
     /* encodes the final image for sending via WhatsApp.*/
     private String encodeToBase64(BufferedImage img) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
