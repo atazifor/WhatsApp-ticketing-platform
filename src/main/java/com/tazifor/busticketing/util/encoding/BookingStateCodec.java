@@ -1,7 +1,7 @@
 package com.tazifor.busticketing.util.encoding;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.dto.BookingState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

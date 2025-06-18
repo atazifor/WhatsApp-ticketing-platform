@@ -1,9 +1,9 @@
 package com.tazifor.busticketing.util;
 
-import com.tazifor.busticketing.model.Ticket;
+import com.tazifor.busticketing.dto.RenderableTicket;
 
 public class TicketFormatter {
-    public static String formatTicketCaption(Ticket t) {
+    public static String formatTicketCaption(RenderableTicket t) {
         String rtLine = t.isRoundTrip()
             ? "🔁 Round‑trip booked — call " + t.getAgency() + " at " + t.getAgencyPhone() + " for return arrangements."
             : "";

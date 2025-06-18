@@ -1,4 +1,4 @@
-package com.tazifor.busticketing.model;
+package com.tazifor.busticketing.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

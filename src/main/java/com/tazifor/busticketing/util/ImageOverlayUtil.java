@@ -198,5 +198,4 @@ public class ImageOverlayUtil {
             throw new RuntimeException("Failed to encode image", ex);
         }
     }
-
 }

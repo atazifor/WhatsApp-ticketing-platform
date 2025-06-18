@@ -1,7 +1,6 @@
 package com.tazifor.busticketing.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.tazifor.busticketing.model.BookingState;
 import com.tazifor.busticketing.util.encoding.BookingStateCodec;
 import lombok.AllArgsConstructor;
 import lombok.Data;

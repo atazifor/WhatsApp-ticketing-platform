@@ -1,7 +1,7 @@
 package com.tazifor.busticketing.util;
 
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.model.Passenger;
+import com.tazifor.busticketing.dto.BookingState;
+import com.tazifor.busticketing.dto.Passenger;
 
 import java.util.List;
 import java.util.Optional;

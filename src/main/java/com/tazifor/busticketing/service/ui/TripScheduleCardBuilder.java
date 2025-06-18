@@ -1,19 +1,19 @@
 package com.tazifor.busticketing.service.ui;
 
-import com.tazifor.busticketing.model.AgencySchedule;
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.model.ScheduleDetails;
-import com.tazifor.busticketing.model.SeatingInfo;
-import com.tazifor.busticketing.service.AgencyMetadataService;
-import com.tazifor.busticketing.service.ScheduleQueryService;
+import com.tazifor.busticketing.model.Schedule;
+import com.tazifor.busticketing.dto.BookingState;
+import com.tazifor.busticketing.model.TravelClass;
+import com.tazifor.busticketing.repository.ScheduleClassPriceRepository;
+import com.tazifor.busticketing.repository.SeatRepository;
+import com.tazifor.busticketing.service.AgencyService;
 import com.tazifor.busticketing.util.encoding.BookingStateCodec;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.tazifor.busticketing.service.Screen.STEP_CHOOSE_SEAT;
 import static com.tazifor.busticketing.service.Screen.STEP_NUMBER_OF_TICKETS;
@@ -23,47 +23,46 @@ import static com.tazifor.busticketing.service.Screen.STEP_NUMBER_OF_TICKETS;
 public class TripScheduleCardBuilder {
     private final static org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(TripScheduleCardBuilder.class);
 
-    private final ScheduleQueryService scheduleQueryService;
-    private final AgencyMetadataService agencyMetadataService;
+    private final SeatRepository seatRepository;
+    private final AgencyService agencyService;
+    private final ScheduleClassPriceRepository priceRepository;
 
-    public List<Map<String, Object>> build(List<AgencySchedule> allSchedules, String date, BookingState state) {
+
+    public List<Map<String, Object>> build(List<Schedule> allSchedules, String date, BookingState state) {
         return allSchedules.stream()
-            .map(schedule -> buildCard(schedule, date, state))
+            .flatMap(schedule -> priceRepository.findBySchedule(schedule).stream()
+                .map(priceEntry -> buildCard(schedule, priceEntry.getTravelClass(), priceEntry.getPrice(), state))
+            )
             .toList();
     }
 
-    private Map<String, Object> buildCard(AgencySchedule schedule, String date, BookingState state) {
+    private Map<String, Object> buildCard(Schedule schedule, TravelClass travelClass, int price, BookingState state) {
         Map<String, Object> card = new LinkedHashMap<>();
 
-        String agency = schedule.agency();
-        String className = schedule.travelClass();
-        Optional<ScheduleDetails> optDetails = scheduleQueryService.findScheduleDetails(
-            schedule.agency(),
-            schedule.from(),
-            schedule.to(),
-            schedule.travelClass(),
-            schedule.time()
-        );
-        int available = 0;
-        String nextScreen = STEP_CHOOSE_SEAT;
-        if (optDetails.isPresent()) {
-            SeatingInfo seatingInfo = optDetails.get().seatingInfo();
-            if(seatingInfo.isOpenSeating()) {
-                nextScreen = STEP_NUMBER_OF_TICKETS;
-            }
-            available = seatingInfo.unsoldCount(schedule.travelClass());
-        }
+        String agencyName = schedule.getAgency().getName();
+        String className = travelClass.getName();
+        String from = schedule.getFromLocation().getName();
+        String to = schedule.getToLocation().getName();
+        String time = schedule.getDepartureTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+        String date = schedule.getTravelDate().format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
 
-        int maxPerBooking = agencyMetadataService.getConfig(agency).maxTicketsPerBooking();
+        boolean isOpenSeating = schedule.getBus().getIsOpenSeating();
+        int available = seatRepository.countByScheduleIdAndTravelClassIdAndIsSoldFalse(
+            schedule.getId(),
+            travelClass.getId()
+        );
+
+        int maxPerBooking = agencyService.getMaxTicketsPerBooking(agencyName);
+        String nextScreen = isOpenSeating ? STEP_NUMBER_OF_TICKETS : STEP_CHOOSE_SEAT;
 
         // Required fields
-        card.put("id", generateId(schedule));
+        card.put("id", schedule.getId()+"/"+travelClass.getId());
         card.put("main-content", Map.of(
-            "title", truncate(agency + " - " + className, 30),
+            "title", truncate(agencyName + " - " + className, 30),
             "metadata", truncate(
-                capitalize(schedule.from()) + " → " + capitalize(schedule.to()) +
-                    " | " + schedule.time() +
-                    " | " + formatPrice(schedule.price()),
+                capitalize(from) + " → " + capitalize(to) +
+                    " | " + time +
+                    " | " + formatPrice(price),
                 80
             )
         ));
@@ -77,29 +76,26 @@ public class TripScheduleCardBuilder {
             ));
         } else {
             if (available < maxPerBooking) {
-                card.put("tags", List.of(available + " seats left"));
+                card.put("tags", List.of(available + " seat%s left ".formatted(available == 1 ? "" : "s")));
+                //card.put("tags", List.of(available + " | " + date));
             }
             card.put("on-click-action", Map.of(
                 "name", "data_exchange",
                 "payload", Map.of(
                     "screen", nextScreen,
-                    "agency", agency,
-                    "origin", schedule.from(),
-                    "destination", schedule.to(),
+                    "agency", agencyName,
+                    "origin", from,
+                    "destination", to,
                     "class", className,
                     "date", date,
-                    "time", schedule.time(),
-                    "price", schedule.price(),
+                    "time", time,
+                    "price", price,
                     "_state", BookingStateCodec.encode(state)
                 )
             ));
         }
 
         return card;
-    }
-
-    private String generateId(AgencySchedule schedule) {
-        return schedule.agency() + "_" + schedule.travelClass() + "_" + schedule.time();
     }
 
     private String formatPrice(int price) {

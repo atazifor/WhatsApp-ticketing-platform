@@ -1,4 +1,4 @@
-package com.tazifor.busticketing.model;
+package com.tazifor.busticketing.util;
 
 public enum BusLayoutCellType {
     DRIVER,    // Top‐left box for the driver

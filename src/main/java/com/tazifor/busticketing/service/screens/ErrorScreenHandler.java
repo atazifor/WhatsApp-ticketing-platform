@@ -1,16 +1,12 @@
 package com.tazifor.busticketing.service.screens;
 
 import com.tazifor.busticketing.dto.*;
-import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.dto.BookingState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-
-import static com.tazifor.busticketing.service.Screen.STEP_CHOOSE_ORIGIN;
 
 @Component("GENERIC_ERROR")
 public class ErrorScreenHandler implements ScreenHandler {

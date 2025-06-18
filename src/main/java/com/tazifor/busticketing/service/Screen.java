@@ -2,8 +2,7 @@ package com.tazifor.busticketing.service;
 
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.model.Passenger;
+import com.tazifor.busticketing.dto.BookingState;
 
 import java.util.*;
 

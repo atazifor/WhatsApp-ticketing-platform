@@ -2,7 +2,7 @@ package com.tazifor.busticketing.service;
 
 import com.tazifor.busticketing.config.properties.BusLayoutConfig;
 import com.tazifor.busticketing.config.properties.FontConfig;
-import com.tazifor.busticketing.model.BusLayoutCellType;
+import com.tazifor.busticketing.util.BusLayoutCellType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

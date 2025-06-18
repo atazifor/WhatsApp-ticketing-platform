@@ -2,10 +2,12 @@ package com.tazifor.busticketing.service;
 
 import com.tazifor.busticketing.dto.*;
 import com.tazifor.busticketing.dto.crypto.FlowEncryptedPayload;
-import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.dto.BookingState;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tazifor.busticketing.model.Ticket;
-import com.tazifor.busticketing.model.TicketFactory;
+import com.tazifor.busticketing.dto.RenderableTicket;
+import com.tazifor.busticketing.dto.RenderableTicketFactory;
+import com.tazifor.busticketing.exception.BookingProcessingException;
+import com.tazifor.busticketing.model.*;
 import com.tazifor.busticketing.service.screens.ScreenHandler;
 import com.tazifor.busticketing.util.encoding.BookingStateCodec;
 import com.tazifor.busticketing.util.StateDiffUtil;
@@ -16,9 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 /**
  * Orchestrates both encrypted (endpoint‐powered) and unencrypted interactive Flows.
@@ -32,6 +34,8 @@ public class FlowService {
     private final Map<String, ScreenHandler>  screenHandlers;
     private final ObjectMapper objectMapper;
     private final TicketSendingService ticketSendingService;
+    private final BookingService bookingService;
+    private final AgencyService agencyService;
 
     /**
      * Decrypts the incoming encrypted payload (FlowEncryptedPayload), runs flow logic, re‐encrypts the new state,
@@ -138,12 +142,124 @@ public class FlowService {
 
         logger.info("Plain Flow completed for token {} from {} with params {}", flowToken, from, finalParams);
 
-        // Perform any business logic here (e.g. persist appointment to DB)
-        List<Ticket> tickets = TicketFactory.fromFinalParams(finalParams);
-
-        // send tickets
-        ticketSendingService.sendAllTickets(from, tickets);
+        try {
+            Booking booking = createBookingFromParams(finalParams, from);
+            logger.info("Created booking with ID {}", booking.getId());
+            String agencyPhone = finalParams.getOrDefault("agency_phone", "").toString();
+            List<RenderableTicket> tickets = buildRenderableTickets(booking, agencyPhone);
+            logger.info("Built {} tickets", tickets.size());
+            ticketSendingService.sendAllTickets(from, tickets);
+        } catch (Exception e) {
+            logger.error("Failed to process booking completion", e);
+            throw new BookingProcessingException("Failed to complete booking", e);
+        }
     }
+
+    private Booking createBookingFromParams(Map<String, Object> finalParams, String customerPhone) {
+        // Extract required parameters with validation
+        UUID scheduleId = UUID.fromString(finalParams.get("schedule_id").toString());
+
+        // Process passengers
+        List<Passenger> passengers = Optional.ofNullable((List<Object>) finalParams.get("passengers"))
+            .orElseGet(List::of)
+            .stream()
+            .filter(Map.class::isInstance)
+            .map(obj -> {
+                try {
+                    return objectMapper.convertValue(obj, Passenger.class);
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Invalid passenger data: {}", obj);
+                    return null;
+                }
+            })
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (passengers.isEmpty()) {
+            throw new IllegalArgumentException("At least one passenger is required");
+        }
+
+        // Extract booking details
+        String customerName = passengers.get(0).getName();
+        String email = passengers.get(0).getEmail();
+        String moreDetails = finalParams.getOrDefault("more_details", "").toString();
+        List<String> seatNumbers = Optional.ofNullable((List<String>) finalParams.get("seat_numbers"))
+            .orElseGet(List::of);
+        List<String> passengerNames = passengers.stream()
+            .map(Passenger::getName)
+            .toList();
+
+        return bookingService.createBooking(
+            customerName,
+            customerPhone, // TODO: Use the provided phone number
+            email,
+            moreDetails,
+            scheduleId,
+            seatNumbers,
+            passengerNames
+        );
+    }
+
+
+    private List<RenderableTicket> buildRenderableTickets(Booking booking, String agencyPhone) {
+        if (booking.getTickets() == null || booking.getTickets().isEmpty()) {
+            return List.of();
+        }
+
+        // Get common data from first ticket
+        Ticket firstTicket = booking.getTickets().get(0);
+        Schedule schedule = firstTicket.getSchedule();
+
+        Agency agency = schedule.getAgency();
+        Location from = schedule.getFromLocation();
+        Location to = schedule.getToLocation();
+
+        // Calculate price - get from schedule's class prices
+        ScheduleClassPrice classPrice = schedule.getScheduleClassPrices().stream()
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("No class prices found for schedule " + schedule.getId()));
+        int basePrice = classPrice.getPrice();
+        logger.debug("Schedule {} has base price {}", schedule.getId(), basePrice);
+        String travelClass = classPrice.getTravelClass().getName();
+
+        boolean isRoundTrip = Boolean.TRUE.equals(booking.getIsRoundTrip());
+        int finalPrice = isRoundTrip ? (int)(basePrice * 2 * 0.85) : basePrice;
+
+        return booking.getTickets().stream().map(ticket -> {
+            RenderableTicket renderable = new RenderableTicket();
+
+            // Set ticket details
+            renderable.setTicketNumber("TX-" + ticket.getId().toString().substring(0, 8).toUpperCase());
+            renderable.setPassengerName(ticket.getPassengerName());
+            renderable.setPassengerEmail(ticket.getPassengerEmail());
+            renderable.setPassengerPhone(ticket.getPassengerPhone());
+
+            // Set seat number directly from ticket
+            if (ticket.getSeatNumber() != null && !ticket.getSeatNumber().isEmpty()) {
+                renderable.setSeat(ticket.getSeatNumber());
+            }
+
+            // Set schedule info
+            renderable.setOrigin(from.getName());
+            renderable.setDestination(to.getName());
+            renderable.setDate(schedule.getTravelDate().toString());
+            renderable.setTime(schedule.getDepartureTime().format(DateTimeFormatter.ofPattern("HH:mm")));
+
+            // Set agency info
+            renderable.setAgency(agency.getName());
+            renderable.setAgencyPhone(agencyPhone);
+
+            // Determine travel class - needs to come from schedule's class prices
+            renderable.setTravelClass(travelClass);
+
+            renderable.setPrice(finalPrice);
+            renderable.setRoundTrip(isRoundTrip);
+            renderable.setIssuedAt(LocalDateTime.now());
+
+            return renderable;
+        }).toList();
+    }
+
 
 }
 

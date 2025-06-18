@@ -3,7 +3,7 @@ package com.tazifor.busticketing.service.screens;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
-import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.dto.BookingState;
 import com.tazifor.busticketing.service.SeatService;
 import com.tazifor.busticketing.util.BeanUtil;
 import com.tazifor.busticketing.whatsapp.session.SessionContextStore;

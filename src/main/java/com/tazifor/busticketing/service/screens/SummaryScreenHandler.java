@@ -1,10 +1,13 @@
 package com.tazifor.busticketing.service.screens;
 
 import com.tazifor.busticketing.dto.*;
+import com.tazifor.busticketing.exception.BusinessException;
 import com.tazifor.busticketing.model.AgencyContact;
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.model.Passenger;
-import com.tazifor.busticketing.service.AgencyMetadataService;
+import com.tazifor.busticketing.dto.BookingState;
+import com.tazifor.busticketing.dto.Passenger;
+import com.tazifor.busticketing.model.Schedule;
+import com.tazifor.busticketing.service.AgencyService;
+import com.tazifor.busticketing.service.ScheduleService;
 import com.tazifor.busticketing.util.BookingFormatter;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.tazifor.busticketing.service.Screen.*;
 
@@ -20,7 +24,8 @@ import static com.tazifor.busticketing.service.Screen.*;
 @RequiredArgsConstructor
 public class SummaryScreenHandler implements ScreenHandler {
     private final static Logger logger = LoggerFactory.getLogger(SummaryScreenHandler.class);
-    private final AgencyMetadataService agencyMetadataService;
+    private final AgencyService agencyService;
+    private final ScheduleService scheduleService;
 
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
@@ -42,6 +47,7 @@ public class SummaryScreenHandler implements ScreenHandler {
         );
 
         if (!agreed) {
+            logger.debug("User did not agree to terms. Returning to STEP_SUMMARY");
             // Re‐show SUMMARY with an error
             Map<String, Object> errorData = new LinkedHashMap<>();
             errorData.put("appointment",    BookingFormatter.formatAppointment(origin, destination, date, time));
@@ -49,13 +55,22 @@ public class SummaryScreenHandler implements ScreenHandler {
             errorData.put("error_message",  "❗ You must agree to the terms to proceed.");
             return new ScreenHandlerResult(state.withStep(STEP_SUMMARY), new NextScreenResponsePayload(STEP_SUMMARY, errorData));
         }
-
         BookingState newState = state.withStep("END");
 
-        AgencyContact agencyContact = agencyMetadataService.getContact(state.getAgency(), state.getOrigin())
-            .orElse(new AgencyContact(state.getOrigin(), "NA", "NA"));
+        logger.debug("User agreed to terms. Returning to END witg agency {} and origin {}",
+            state.getAgency(), state.getOrigin());
+
+        AgencyContact agencyContact = agencyService.getContact(state.getAgency(), state.getOrigin())
+            .orElseThrow(() -> new BusinessException("No contact found for agency " + state.getAgency() + " in city " + state.getOrigin()));
+
+        Schedule scheduleDetails = scheduleService.findScheduleDetails(state.getAgency(), state.getOrigin(),
+            state.getDestination(), state.getTravelClass(),
+            state.getTime(), state.getDate())
+            .orElseThrow(() -> new BusinessException("No schedule found for the specified criteria"));
+
         // Otherwise, finalize booking
         Map<String, Object> finalParams = new LinkedHashMap<>();
+        finalParams.put("schedule_id",scheduleDetails.getId());
         finalParams.put("origin", origin);
         finalParams.put("destination", destination);
         finalParams.put("date", date);
@@ -63,8 +78,8 @@ public class SummaryScreenHandler implements ScreenHandler {
         finalParams.put("time", time);
         finalParams.put("class", travelClass);
         finalParams.put("agency", state.getAgency());
-        finalParams.put("agency_phone", agencyContact.phone());
-        finalParams.put("agency_address", agencyContact.address());
+        finalParams.put("agency_phone", agencyContact.getPhone());
+        finalParams.put("agency_address", agencyContact.getAddress());
         finalParams.put("price", state.getPrice());
         finalParams.put("seat", state.getChosenSeats());
         finalParams.put("passengers", state.getPassengerList());

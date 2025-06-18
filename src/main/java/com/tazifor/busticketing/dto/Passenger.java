@@ -1,4 +1,4 @@
-package com.tazifor.busticketing.model;
+package com.tazifor.busticketing.dto;
 
 import lombok.*;
 

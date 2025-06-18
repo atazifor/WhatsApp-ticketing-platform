@@ -3,11 +3,12 @@ package com.tazifor.busticketing.service.screens;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.model.ScheduleDetails;
-import com.tazifor.busticketing.model.SeatingInfo;
-import com.tazifor.busticketing.service.AgencyMetadataService;
-import com.tazifor.busticketing.service.ScheduleQueryService;
+import com.tazifor.busticketing.model.Schedule;
+import com.tazifor.busticketing.model.Seat;
+import com.tazifor.busticketing.dto.BookingState;
+import com.tazifor.busticketing.repository.SeatRepository;
+import com.tazifor.busticketing.service.AgencyService;
+import com.tazifor.busticketing.service.ScheduleService;
 import com.tazifor.busticketing.util.ImageOverlayUtil;
 import com.tazifor.busticketing.whatsapp.session.SessionContextStore;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +26,10 @@ public class NumberOfTicketsHandler implements ScreenHandler {
     private final static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(NumberOfTicketsHandler.class);
 
     private final SessionContextStore sessionContextStore;
-    private final ScheduleQueryService scheduleQueryService;
+    private final ScheduleService scheduleService;
+    private final SeatRepository seatRepository;
     private final ImageOverlayUtil imageOverlayUtil;
-    private final AgencyMetadataService agencyMetadataService;
+    private final AgencyService agencyService;
 
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload, BookingState state) {
@@ -37,26 +39,31 @@ public class NumberOfTicketsHandler implements ScreenHandler {
         BookingState newState = state.withNumTickets(numberOfTickets);
 
         //get available seats from agency metadata service
-        Optional<ScheduleDetails> optDetails = scheduleQueryService.findScheduleDetails(
+        Optional<Schedule> optDetails = scheduleService.findScheduleDetails(
             state.getAgency(),
             state.getOrigin(),
             state.getDestination(),
             state.getTravelClass(),
-            state.getTime()
+            state.getTime(),
+            state.getDate()
         );
 
         NextScreenResponsePayload nextScreenResponsePayload;
         if (optDetails.isPresent()) {
-            SeatingInfo seatingInfo = optDetails.get().seatingInfo();
-            boolean openSeating = seatingInfo.isOpenSeating();
+            Schedule schedule = optDetails.get();
+            boolean openSeating = schedule.getBus().getIsOpenSeating();
             if(openSeating) {
                 newState = newState.withStep(STEP_PASSENGER_INFORMATION);
                 nextScreenResponsePayload = initPassengerInfoUi(payload, newState);
             }else {
-                List<String> availableSeats = seatingInfo.getAllAvailableSeatNumbers(state.getTravelClass());
+                // Fetch available seats for that class and schedule
+                List<Seat> unsoldSeats = seatRepository.findAvailableSeatsByScheduleAndClass(schedule, state.getTravelClass());
+                List<String> availableSeatNumbers = unsoldSeats.stream()
+                    .map(Seat::getSeatNumber)
+                    .toList();
 
                 newState = newState.withStep(STEP_CHOOSE_SEAT);
-                nextScreenResponsePayload = initChooseSeatUi(newState, availableSeats);
+                nextScreenResponsePayload = initChooseSeatUi(newState, availableSeatNumbers);
             }
 
         }else { //TODO: why would optDetails be empty?
@@ -80,7 +87,7 @@ public class NumberOfTicketsHandler implements ScreenHandler {
     private NextScreenResponsePayload initChooseSeatUi(BookingState state, List<String> availableSeats) {
         logger.debug("Available seats: {}", availableSeats);
 
-        String busBase64 = imageOverlayUtil.createAvailabilityOverlay(new HashSet<>(availableSeats)); // “responseData:image/png;base64,…”
+        String busBase64 = imageOverlayUtil.createAvailabilityOverlay(new HashSet<>(availableSeats));
 
         if (busBase64 == null) {
             // If for some reason the service didn’t produce an image or any seats
@@ -104,17 +111,26 @@ public class NumberOfTicketsHandler implements ScreenHandler {
             ))
             .collect(Collectors.toList());
 
-        int maxTicketsPerBooking = agencyMetadataService.getConfig(state.getAgency()).maxTicketsPerBooking();
-        maxTicketsPerBooking = Math.min(maxTicketsPerBooking, availableSeats.size());
-        int numberOfTickets = state.getNumTickets().isEmpty() ? 0 : Integer.parseInt(state.getNumTickets());
-        maxTicketsPerBooking = Math.min(maxTicketsPerBooking, numberOfTickets);
+        if (seats.size() == 1) { //for display purposes
+            seats.add(Map.of(
+                "id", "disabled_option",
+                "title", "Only Option",
+                "enabled", true
+            ));
+        }
 
+        logger.debug("Seats to display size: {}", seats.size());
+
+        int maxPerBooking = agencyService.getMaxTicketsPerBooking(state.getAgency());
+        int requestedCount = Integer.parseInt(state.getNumTickets());
+        int maxSelectable = Math.min(requestedCount, Math.min(maxPerBooking, availableSeats.size()));
+        logger.debug("Max selectable: {}", maxSelectable);
         //Put into a single responseData map
         Map<String, Object> fields = new LinkedHashMap<>();
         fields.put("image", busBase64);
         fields.put("seats", seats);
-        fields.put("maxSelectable", maxTicketsPerBooking);
-        fields.put("current_passenger_index", Integer.parseInt(state.getNumTickets()) > 0 ? "1" : "");
+        fields.put("maxSelectable", maxSelectable);
+        fields.put("current_passenger_index", requestedCount > 0 ? "1" : "");
 
         // Return payload whose `responseData` matches your JSON layout’s placeholders
         return new NextScreenResponsePayload(STEP_CHOOSE_SEAT, fields);

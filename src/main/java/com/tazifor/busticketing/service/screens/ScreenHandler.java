@@ -1,9 +1,8 @@
 package com.tazifor.busticketing.service.screens;
 
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
-import com.tazifor.busticketing.dto.FlowResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
-import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.dto.BookingState;
 
 /**
  * Given a FlowDataExchangePayload and current BookingState, return

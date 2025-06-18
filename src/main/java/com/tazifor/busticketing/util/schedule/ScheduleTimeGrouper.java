@@ -1,31 +1,36 @@
 package com.tazifor.busticketing.util.schedule;
 
-import com.tazifor.busticketing.model.AgencySchedule;
+import com.tazifor.busticketing.model.Schedule;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ScheduleTimeGrouper {
-    private static final DateTimeFormatter INPUT_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+
     private static final DateTimeFormatter DISPLAY_TIME_FORMAT = DateTimeFormatter.ofPattern("hh:mm a");
 
     public enum TimeSlotGroup {
-        MORNING, AFTERNOON, EVENING;
+        MORNING, AFTERNOON, EVENING
     }
 
-    public static Map<TimeSlotGroup, List<Map<String, String>>> groupByTimeSlot(List<AgencySchedule> schedules) {
+    /**
+     * Groups distinct departure times from Schedule entities into time slot buckets.
+     *
+     * @param schedules List of Schedule entities (from DB)
+     * @return Map from TimeSlotGroup (MORNING, etc.) → List of Maps like {id: "14:30", title: "02:30 PM"}
+     */
+    public static Map<TimeSlotGroup, List<Map<String, Object>>> groupByTimeSlot(List<Schedule> schedules) {
         return schedules.stream()
-            .map(AgencySchedule::time)
+            .map(Schedule::getDepartureTime)
             .distinct()
             .sorted()
             .map(time -> {
-                LocalTime t = LocalTime.parse(time, INPUT_TIME_FORMAT);
-                TimeSlotGroup group = getTimeSlotGroup(t);
-                return Map.entry(group, Map.of("id", time, "title", DISPLAY_TIME_FORMAT.format(t)));
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("id", time.toString());
+                item.put("title", DISPLAY_TIME_FORMAT.format(time));
+                return Map.entry(getTimeSlotGroup(time), item);
             })
             .collect(Collectors.groupingBy(
                 Map.Entry::getKey,
@@ -35,9 +40,9 @@ public class ScheduleTimeGrouper {
     }
 
     private static TimeSlotGroup getTimeSlotGroup(LocalTime time) {
-        if( time.isBefore(LocalTime.of(12, 0)) ) {
+        if (time.isBefore(LocalTime.of(12, 0))) {
             return TimeSlotGroup.MORNING;
-        } else if( time.isBefore(LocalTime.of(17, 0)) ) {
+        } else if (time.isBefore(LocalTime.of(17, 0))) {
             return TimeSlotGroup.AFTERNOON;
         } else {
             return TimeSlotGroup.EVENING;

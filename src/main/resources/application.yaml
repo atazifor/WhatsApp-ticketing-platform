@@ -17,9 +17,7 @@ whatsapp:
     phone-number-id: 571710919355097
 server:
   port: 3000
-logging:
-  level:
-    com.tazifor: debug
+
 # Point to the bus_10_seats.png under classpath:static
 seating:
   base-images:
@@ -52,3 +50,20 @@ bus:
       - ["SEAT",    "SEAT",    "TOILET"  ]  # Row 2: seats A2, B2, and a toilet at C2
       - ["SEAT",    "SEAT",    "EMPTY"   ]  # Row 3: seats A3, B3, and an empty placeholder at C3
       - ["SEAT",    "SEAT",    "EMPTY"   ]  # Row 4: seats A4, B4, and an empty placeholder at C4
+spring:
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=24h
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    com.tazifor: debug
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: warn

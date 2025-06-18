@@ -1,15 +1,12 @@
 package com.tazifor.busticketing.service.screens;
 
-import com.tazifor.busticketing.config.AgencyConfig;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
 import com.tazifor.busticketing.model.AgencyContact;
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.model.ScheduleDetails;
-import com.tazifor.busticketing.model.SeatingInfo;
-import com.tazifor.busticketing.service.AgencyMetadataService;
-import com.tazifor.busticketing.service.ScheduleQueryService;
+import com.tazifor.busticketing.dto.BookingState;
+import com.tazifor.busticketing.service.AgencyService;
+import com.tazifor.busticketing.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +26,8 @@ import static org.springframework.util.StringUtils.capitalize;
 public class DisplayResultsHandler implements ScreenHandler {
     private final static Logger LOGGER = LoggerFactory.getLogger(DisplayResultsHandler.class);
 
-    private final AgencyMetadataService agencyMetadataService;
-    private final ScheduleQueryService scheduleQueryService;
+    private final AgencyService agencyService;
+    private final ScheduleService scheduleService;
 
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload,
@@ -45,21 +42,21 @@ public class DisplayResultsHandler implements ScreenHandler {
             .withPrice(data.get("price").toString())
             .withStep(STEP_NUMBER_OF_TICKETS);
 
-        AgencyConfig agencyConfig = agencyMetadataService.getConfig(newState.getAgency());
-        int maxTicketsPerBooking = agencyConfig.maxTicketsPerBooking();
-        Optional<ScheduleDetails> optDetails = scheduleQueryService.findScheduleDetails(
-            newState.getAgency()
-            , newState.getOrigin()
-            , newState.getDestination()
-            , newState.getTravelClass()
-            , newState.getTime()
+        int maxTicketsPerBooking = agencyService.getMaxTicketsPerBooking(newState.getAgency());
+        /*int available = seatRepository.countByScheduleIdAndTravelClassIdAndIsSoldFalse(
+            schedule.getId(),
+            travelClass.getId()
+        );*/
+        int unsold = scheduleService.getUnsoldSeats(
+            newState.getAgency(),
+            newState.getOrigin(),
+            newState.getDestination(),
+            newState.getTravelClass(),
+            newState.getDate(),
+            newState.getTime()
         );
-        int unsold = Integer.MAX_VALUE;
 
-        if (optDetails.isPresent()) {
-            SeatingInfo seatingInfo = optDetails.get().seatingInfo();
-            unsold = seatingInfo.unsoldCount(newState.getTravelClass());
-        }
+        LOGGER.debug("ScreenHandlerResult.Unsold seats: {}", unsold);
 
         int numTicketsForDropdown = Math.min(unsold, maxTicketsPerBooking);
 
@@ -72,9 +69,9 @@ public class DisplayResultsHandler implements ScreenHandler {
             )
             .toList();
 
-        Optional<AgencyContact> contactOpt = agencyMetadataService.getContact(newState.getAgency(), newState.getOrigin());
+        Optional<AgencyContact> contactOpt = agencyService.getContact(newState.getAgency(), newState.getOrigin());
 
-        String thresholdText = getTicketsThresholdText(newState.getAgency(), agencyConfig.maxTicketsPerBooking(), contactOpt);
+        String thresholdText = getTicketsThresholdText(newState.getAgency(), maxTicketsPerBooking, contactOpt);
 
         // 4b) Put into a single responseData map
         Map<String, Object> fields = new LinkedHashMap<>();
@@ -94,9 +91,9 @@ public class DisplayResultsHandler implements ScreenHandler {
                 "For more than **%d** tickets, please contact **%s** at **%s**.\nLocation: _%s, %s_",
                 maxPerBooking,
                 agencyName,
-                contact.phone(),
-                contact.address(),
-                capitalize(contact.city())
+                contact.getPhone(),
+                contact.getAddress(),
+                capitalize(contact.getCity())
             );
         } else {
             return String.format(

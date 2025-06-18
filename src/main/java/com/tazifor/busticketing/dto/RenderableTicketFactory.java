@@ -1,4 +1,4 @@
-package com.tazifor.busticketing.model;
+package com.tazifor.busticketing.dto;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -7,10 +7,10 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.*;
 
-public class TicketFactory {
-    private final static Logger logger = LoggerFactory.getLogger(TicketFactory.class);
+public class RenderableTicketFactory {
+    private final static Logger logger = LoggerFactory.getLogger(RenderableTicketFactory.class);
     final static ObjectMapper MAPPER = new ObjectMapper();
-    public static List<Ticket> fromFinalParams(Map<String, Object> finalParams) {
+    public static List<RenderableTicket> fromFinalParams(Map<String, Object> finalParams) {
         List<String> seats = Optional.ofNullable((List<String>) finalParams.get("seat")).orElse(List.of());
 
         List<Object> rawList = Optional.ofNullable((List<Object>) finalParams.get("passengers"))
@@ -27,10 +27,10 @@ public class TicketFactory {
         int basePrice = Integer.parseInt(finalParams.get("price").toString());
         int price = isRoundTrip ? (int)(basePrice * 2 * 0.85) : basePrice;
 
-        List<Ticket> tickets = new ArrayList<>();
+        List<RenderableTicket> tickets = new ArrayList<>();
         for (int i = 0; i < passengers.size(); i++) {
             Passenger p = passengers.get(i);
-            Ticket t = new Ticket();
+            RenderableTicket t = new RenderableTicket();
             t.setTicketNumber("TX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             t.setPassengerName(p.getName());
             t.setPassengerEmail(p.getEmail());

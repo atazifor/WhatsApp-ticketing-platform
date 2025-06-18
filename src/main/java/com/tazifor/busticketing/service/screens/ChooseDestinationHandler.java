@@ -3,7 +3,7 @@ package com.tazifor.busticketing.service.screens;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
-import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.dto.BookingState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

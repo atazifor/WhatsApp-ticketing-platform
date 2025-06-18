@@ -1,6 +1,6 @@
 package com.tazifor.busticketing.util;
 
-import com.tazifor.busticketing.model.BookingState;
+import com.tazifor.busticketing.dto.BookingState;
 
 import java.lang.reflect.Field;
 import java.util.Objects;

@@ -3,8 +3,8 @@ package com.tazifor.busticketing.service.screens;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.model.Passenger;
+import com.tazifor.busticketing.dto.BookingState;
+import com.tazifor.busticketing.dto.Passenger;
 import com.tazifor.busticketing.util.BookingFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +23,10 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
                                                   BookingState state) {
 
         Map<String, Object> data = payload.getData();
-        String fullName = data.get("full_name").toString();
-        String email = Optional.ofNullable(data.get("email"))
-            .map(Object::toString)
-            .orElse("");
-        String phone = Optional.ofNullable(data.get("phone"))
-            .map(Object::toString)
-            .orElse("");
+        String fullName = getValue(data, "full_name");
+        String email = getValue(data, "email");
+        String phone = getValue(data, "phone");
+        String moreDetails = getValue(data, "more_details");
 
         // Deserialize or init list
         List<Passenger> passengerList = state.getPassengerList() != null
@@ -37,7 +34,6 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
             : new ArrayList<>();
         passengerList.add(new Passenger(fullName, email, phone));
 
-        String moreDetails= data.getOrDefault("more_details", "").toString();
 
         int totalTickets = Integer.parseInt(state.getNumTickets());
         boolean isLastPassenger = passengerList.size() >= totalTickets;
@@ -63,5 +59,9 @@ public class PassengerInfoScreenHandler implements ScreenHandler {
                 new NextScreenResponsePayload(STEP_PASSENGER_INFORMATION, nextData));
         }
 
+    }
+
+    private String getValue(Map<String, Object> data, String key) {
+        return Optional.ofNullable(data.get(key)).map(Object::toString).orElse("");
     }
 }

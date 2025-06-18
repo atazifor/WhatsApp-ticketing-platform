@@ -1,6 +1,6 @@
 package com.tazifor.busticketing.config.properties;
 
-import com.tazifor.busticketing.model.BusLayoutCellType;
+import com.tazifor.busticketing.util.BusLayoutCellType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.List;
 

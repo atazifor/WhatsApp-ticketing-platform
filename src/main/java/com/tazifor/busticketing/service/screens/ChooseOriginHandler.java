@@ -3,8 +3,8 @@ package com.tazifor.busticketing.service.screens;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.service.StaticLookupService;
+import com.tazifor.busticketing.dto.BookingState;
+import com.tazifor.busticketing.service.MetadataLookupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +17,7 @@ import static org.springframework.util.StringUtils.capitalize;
 @Component("CHOOSE_ORIGIN")
 @RequiredArgsConstructor
 public class ChooseOriginHandler implements ScreenHandler {
-    private final StaticLookupService staticLookupService;
+    private final MetadataLookupService metadataLookupService;
 
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload, BookingState state) {
@@ -27,7 +27,7 @@ public class ChooseOriginHandler implements ScreenHandler {
         BookingState newState = state.withOrigin(origin)
             .withStep(STEP_CHOOSE_DESTINATION);
 
-        List<String> allCities = staticLookupService.getCities();
+        List<String> allCities = metadataLookupService.getCities();
 
         List<Map<String, String>> destinations = allCities.stream()
             .filter(city -> !city.equals(origin))

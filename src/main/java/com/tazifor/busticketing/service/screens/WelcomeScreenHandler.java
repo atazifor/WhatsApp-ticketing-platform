@@ -1,8 +1,8 @@
 package com.tazifor.busticketing.service.screens;
 
 import com.tazifor.busticketing.dto.*;
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.service.StaticLookupService;
+import com.tazifor.busticketing.dto.BookingState;
+import com.tazifor.busticketing.service.MetadataLookupService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +19,7 @@ import static org.springframework.util.StringUtils.capitalize;
 @RequiredArgsConstructor
 public class WelcomeScreenHandler implements ScreenHandler {
 
-    private final StaticLookupService staticLookupService;
+    private final MetadataLookupService metadataLookupService;
 
     private static final Logger logger = LoggerFactory.getLogger(WelcomeScreenHandler.class);
 
@@ -59,7 +59,7 @@ public class WelcomeScreenHandler implements ScreenHandler {
     }
 
     private FlowResponsePayload buildChooseOriginScreen() {
-        List<Map<String, String>> cities = staticLookupService.getCities().stream()
+        List<Map<String, String>> cities = metadataLookupService.getCities().stream()
             .map(city -> Map.of("id", city, "title", capitalize(city)))
             .toList();
 

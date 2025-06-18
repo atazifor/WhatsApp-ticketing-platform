@@ -3,8 +3,8 @@ package com.tazifor.busticketing.service.screens;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.service.StaticLookupService;
+import com.tazifor.busticketing.dto.BookingState;
+import com.tazifor.busticketing.service.MetadataLookupService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ import static org.springframework.util.StringUtils.capitalize;
 public class ChooseTimeHandler implements ScreenHandler {
     private static final Logger logger = LoggerFactory.getLogger(ChooseTimeHandler.class);
 
-    private final StaticLookupService lookupService;
+    private final MetadataLookupService lookupService;
 
     @Override
     public ScreenHandlerResult handleDataExchange(FlowDataExchangePayload payload, BookingState state) {

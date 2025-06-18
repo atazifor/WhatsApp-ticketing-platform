@@ -3,9 +3,9 @@ package com.tazifor.busticketing.service.screens;
 import com.tazifor.busticketing.dto.FlowDataExchangePayload;
 import com.tazifor.busticketing.dto.NextScreenResponsePayload;
 import com.tazifor.busticketing.dto.ScreenHandlerResult;
-import com.tazifor.busticketing.model.AgencySchedule;
-import com.tazifor.busticketing.model.BookingState;
-import com.tazifor.busticketing.service.ScheduleQueryService;
+import com.tazifor.busticketing.model.Schedule;
+import com.tazifor.busticketing.dto.BookingState;
+import com.tazifor.busticketing.service.ScheduleService;
 import com.tazifor.busticketing.service.ui.TripScheduleCardBuilder;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -25,7 +25,7 @@ import static org.springframework.util.StringUtils.capitalize;
 @RequiredArgsConstructor
 public class SelectFiltersHandler implements ScreenHandler {
     private final static Logger logger = LoggerFactory.getLogger(SelectFiltersHandler.class);
-    private final ScheduleQueryService queryService;
+    private final ScheduleService queryService;
     private final TripScheduleCardBuilder tripScheduleCardBuilder;
 
     @Override
@@ -49,7 +49,7 @@ public class SelectFiltersHandler implements ScreenHandler {
             .withSelectedAgencies(selectedAgencies);
 
         // Call filtering logic (mocked here)
-        List<AgencySchedule> schedules = queryService.findSchedules(origin, destination, date, selectedClasses, selectedAgencies, selectedTimes);
+        List<Schedule> schedules = queryService.findSchedules(origin, destination, date, selectedClasses, selectedAgencies, selectedTimes);
         List<Map<String, Object>> matchingOptions = tripScheduleCardBuilder.build(schedules, date, newState);
 
 
@@ -76,10 +76,6 @@ public class SelectFiltersHandler implements ScreenHandler {
             }
             newState = newState.withStep("NO_DISPLAY_RESULTS");
             NextScreenResponsePayload nextScreenResponsePayload = new NextScreenResponsePayload("NO_DISPLAY_RESULTS", Map.of(
-                //"origin", origin,
-                //"destination", destination,
-                //"date", date,
-                //"selected_times", selectedTimes,
                 "selected_classes", selectedClasses,
                 "selected_agencies", selectedAgencies,
                 "summary_text", summary
